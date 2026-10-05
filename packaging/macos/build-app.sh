@@ -42,8 +42,6 @@ if [[ "$SKIP_BUILD" != true ]]; then
   echo "Publishing binaries for osx-x64..."
   dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r osx-x64 \
     --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
-  dotnet publish Loquacio.Avalonia/Loquacio.Avalonia.csproj -c Release -r osx-x64 \
-    --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
   dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r osx-x64 \
     --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
 fi
@@ -58,13 +56,12 @@ mkdir -p "$CONTENTS/Frameworks"
 cp -r "$PUBLISH"/. "$CONTENTS/Frameworks/"
 chmod 755 "$CONTENTS/Frameworks/loquacio-daemon"
 chmod 755 "$CONTENTS/Frameworks/loquacio-tui"
-chmod 755 "$CONTENTS/Frameworks/loquacio-avalonia" 2>/dev/null || true
 
 # ---- Create launcher script ----
 cat > "$CONTENTS/MacOS/loquacio" <<'EOS'
 #!/bin/bash
 cd "$(dirname "$0")/../Frameworks"
-exec ./loquacio-avalonia "$@"
+exec ./loquacio-tui "$@"
 EOS
 chmod 755 "$CONTENTS/MacOS/loquacio"
 

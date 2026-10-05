@@ -42,20 +42,26 @@ jobs:
           NUGET_VERSION="${BASE#v}+${SHORT_HASH}"
           RID="${{ matrix.rid }}"
 
+          # UI availability: WPF on Windows only, Avalonia on Linux only,
+          # TUI on all three OSes. The daemon ships everywhere.
+          UI_PROJECTS=""
+          case "$RUNNER_OS" in
+            macOS)   UI_PROJECTS="Loquacio.Tui/Loquacio.Tui.csproj" ;;
+            Linux)   UI_PROJECTS="Loquacio.Avalonia/Loquacio.Avalonia.csproj Loquacio.Tui/Loquacio.Tui.csproj" ;;
+            Windows) UI_PROJECTS="Loquacio/Loquacio.csproj Loquacio.Tui/Loquacio.Tui.csproj" ;;
+          esac
+
           dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj \
             -c Release -r "$RID" --self-contained true \
             -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
             -o "dist/publish/$RID"
 
-          dotnet publish Loquacio.Avalonia/Loquacio.Avalonia.csproj \
-            -c Release -r "$RID" --self-contained true \
-            -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
-            -o "dist/publish/$RID"
-
-          dotnet publish Loquacio.Tui/Loquacio.Tui.csproj \
-            -c Release -r "$RID" --self-contained true \
-            -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
-            -o "dist/publish/$RID"
+          for PROJECT in $UI_PROJECTS; do
+            dotnet publish "$PROJECT" \
+              -c Release -r "$RID" --self-contained true \
+              -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
+              -o "dist/publish/$RID"
+          done
 
       - name: Build .app bundle
         if: runner.os == 'macOS'

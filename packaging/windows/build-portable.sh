@@ -38,7 +38,7 @@ echo "Building Windows portable package version $VERSION..."
 PROJECTS=(
   Loquacio.Daemon/Loquacio.Daemon.csproj
   Loquacio.Tui/Loquacio.Tui.csproj
-  Loquacio.Avalonia/Loquacio.Avalonia.csproj
+  Loquacio/Loquacio.csproj
 )
 
 if [[ "$SKIP_PUBLISH" != true ]]; then
@@ -73,14 +73,14 @@ Contents
 --------
   loquacio-daemon.exe     Background daemon (audio capture + transcription)
   loquacio-tui.exe        Terminal UI controller
-  loquacio-avalonia.exe   GUI controller
+  Loquacio.exe            WPF GUI controller
   (*.dll, *.json are self-contained .NET 10 runtime files - keep them next to the exes)
 
 Quick Start
 -----------
 1. Extract this ZIP to any folder.
 2. Run loquacio-daemon.exe to start the daemon, then a controller
-   (loquacio-tui.exe or loquacio-avalonia.exe).
+   (Loquacio.exe or loquacio-tui.exe).
 
 Run at Login (Task Scheduler hint)
 ----------------------------------

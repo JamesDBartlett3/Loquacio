@@ -7,7 +7,7 @@ This document specifies the macOS packaging approach for Loquacio. macOS package
 ### Primary: .app bundle
 
 The main distribution format is a self-contained .app bundle that includes:
-- All three controllers (Avalonia GUI, TUI, Daemon)
+- Daemon + TUI controller
 - All .NET runtime dependencies
 - System configuration files
 - CGEvent text injection implementation
@@ -160,7 +160,6 @@ jobs:
       - name: Publish binaries
         run: |
           dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
-          dotnet publish Loquacio.Avalonia/Loquacio.Avalonia.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
           dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
 
       - name: Build .app bundle
@@ -179,7 +178,7 @@ jobs:
 - [ ] Audio capture works (microphone permission granted)
 - [ ] Global hotkey detection works (accessibility permission granted)
 - [ ] CGEvent text injection into focused window works
-- [ ] Avalonia GUI controller launches and connects to daemon
+- [ ] TUI controller launches and connects to daemon
 - [ ] Settings persist across restarts
 - [ ] App bundle passes Gatekeeper (ad-hoc signature)
 - [ ] Homebrew cask installs and launches correctly
