@@ -18,7 +18,7 @@ namespace SimpleCrossPlatformTestConsole
             var serviceProvider = services.BuildServiceProvider();
             var logger = serviceProvider.GetService<ILogger<Program>>();
 
-            logger.LogInformation("Starting Simple Cross-Platform Whisper Dictation Test Console");
+            logger.LogInformation("Starting Simple Cross-Platform Loquacio Test Console");
 
             try
             {

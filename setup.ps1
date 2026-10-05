@@ -1,14 +1,14 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-Setup script for Whisper Dictation Phase 1
+Setup script for Loquacio Phase 1
 .DESCRIPTION
 Restores NuGet packages and builds the solution.
 #>
 
-Write-Host "=== Whisper Dictation - Phase 1 Setup ===" -ForegroundColor Cyan
+Write-Host "=== Loquacio - Phase 1 Setup ===" -ForegroundColor Cyan
 
-$SolutionPath = "$PSScriptRoot\WhisperDictation.sln"
+$SolutionPath = "$PSScriptRoot\Loquacio.sln"
 
 if (-not (Test-Path $SolutionPath)) {
     Write-Error "Solution file not found: $SolutionPath"
@@ -37,7 +37,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "`n=== Setup Complete ===" -ForegroundColor Green
 Write-Host "`nNext steps:" -ForegroundColor Cyan
-Write-Host "  1. Open WhisperDictation.sln in Visual Studio" -ForegroundColor White
+Write-Host "  1. Open Loquacio.sln in Visual Studio" -ForegroundColor White
 Write-Host "  2. Review AudioCaptureService.cs implementation" -ForegroundColor White
 Write-Host "  3. Phase 1.3 will add console app for testing" -ForegroundColor White
 Write-Host "`n"

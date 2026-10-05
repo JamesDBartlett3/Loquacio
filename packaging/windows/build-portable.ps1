@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Build portable Windows package for whisper-dictation (Phase D task 2).
+# Build portable Windows package for loquacio (Phase D task 2).
 # Usage:
 #   packaging/windows/build-portable.ps1 [--skip-build]
 
@@ -14,7 +14,7 @@ Set-Location $RepoRoot
 
 $Dist = "$RepoRoot/dist"
 $Publish = "$Dist/publish/win-x64"
-$App = "whisper-dictation"
+$App = "loquacio"
 
 # Get version from git (strip the "v" prefix — it is not a valid NuGet version)
 $Base = & git describe --tags --abbrev=0 2>$null
@@ -29,12 +29,12 @@ Write-Host "Building Windows portable package version $Version..."
 # Build the binaries
 if (-not $SkipBuild) {
     Write-Host "Publishing binaries..."
-    dotnet publish WhisperDictation.Daemon/WhisperDictation.Daemon.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
-    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing WhisperDictation.Daemon failed"; exit 1 }
-    dotnet publish WhisperDictation/WhisperDictation.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
-    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing WhisperDictation (WPF) failed"; exit 1 }
-    dotnet publish WhisperDictation.Tui/WhisperDictation.Tui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
-    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing WhisperDictation.Tui failed"; exit 1 }
+    dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
+    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing Loquacio.Daemon failed"; exit 1 }
+    dotnet publish Loquacio/Loquacio.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
+    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing Loquacio (WPF) failed"; exit 1 }
+    dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
+    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing Loquacio.Tui failed"; exit 1 }
 }
 
 # Create portable archive structure
@@ -53,14 +53,14 @@ Copy-Item -Path "LICENSE" -Destination $Stage -ErrorAction SilentlyContinue
 @"
 @echo off
 cd /d "%~dp0"
-start "" "WhisperDictation.exe"
-"@ | Out-File -FilePath "$Stage\Start Whisper Dictation.bat" -Encoding ASCII
+start "" "Loquacio.exe"
+"@ | Out-File -FilePath "$Stage\Start Loquacio.bat" -Encoding ASCII
 
 # Create Task Scheduler installation script
 @"
 @echo off
-echo Installing Whisper Dictation daemon as scheduled task...
-schtasks /create /tn "WhisperDictation Daemon" /tr "%~dp0whisper-dictation-daemon.exe" /sc onlogon /rl highest /f
+echo Installing Loquacio daemon as scheduled task...
+schtasks /create /tn "Loquacio Daemon" /tr "%~dp0loquacio-daemon.exe" /sc onlogon /rl highest /f
 if %errorlevel% equ 0 (
     echo Success! Daemon will start automatically on login.
 ) else (
@@ -72,8 +72,8 @@ pause
 # Create uninstallation script
 @"
 @echo off
-echo Uninstalling Whisper Dictation daemon...
-schtasks /delete /tn "WhisperDictation Daemon" /f
+echo Uninstalling Loquacio daemon...
+schtasks /delete /tn "Loquacio Daemon" /f
 if %errorlevel% equ 0 (
     echo Success! Daemon will not start automatically.
 ) else (
@@ -84,11 +84,11 @@ pause
 
 # Create README for portable package
 @"
-# Whisper Dictation - Portable Windows Package
+# Loquacio - Portable Windows Package
 
 ## Quick Start
 
-1. Double-click \`Start Whisper Dictation.bat\` to launch the GUI controller.
+1. Double-click \`Start Loquacio.bat\` to launch the GUI controller.
 2. The daemon will start automatically when needed.
 
 ## Automatic Startup
@@ -102,17 +102,17 @@ To remove automatic startup:
 
 ## Components
 
-- \`WhisperDictation.exe\` - GUI controller (Windows Presentation Foundation)
-- \`whisper-dictation-daemon.exe\` - Background daemon (audio capture + transcription)
-- \`whisper-dictation-tui.exe\` - Terminal UI controller (optional)
+- \`Loquacio.exe\` - GUI controller (Windows Presentation Foundation)
+- \`loquacio-daemon.exe\` - Background daemon (audio capture + transcription)
+- \`loquacio-tui.exe\` - Terminal UI controller (optional)
 
 ## Configuration
 
 Settings are stored in:
-- \`%APPDATA%\WhisperDictation\settings.json\`
+- \`%APPDATA%\Loquacio\settings.json\`
 
 Models are downloaded to:
-- \`%LOCALAPPDATA%\WhisperDictation\models\`
+- \`%LOCALAPPDATA%\Loquacio\models\`
 
 ## Troubleshooting
 
@@ -123,7 +123,7 @@ If the daemon doesn't start:
 
 ## Version
 
-This is Whisper Dictation version $Version
+This is Loquacio version $Version
 Built from commit: $ShortHash
 "@ | Out-File -FilePath "$Stage\README-Windows.md" -Encoding UTF8
 
@@ -135,5 +135,5 @@ Write-Host "✅ Portable package built: $ZipPath"
 Write-Host ""
 Write-Host "To install:"
 Write-Host "  1. Extract the ZIP to a folder of your choice"
-Write-Host "  2. Run 'Start Whisper Dictation.bat' to launch"
+Write-Host "  2. Run 'Start Loquacio.bat' to launch"
 Write-Host "  3. (Optional) Run 'Install Daemon.bat' as admin for auto-startup"

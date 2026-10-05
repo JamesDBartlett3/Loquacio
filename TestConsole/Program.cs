@@ -1,5 +1,5 @@
-using WhisperDictation.Models;
-using WhisperDictation.Services;
+using Loquacio.Models;
+using Loquacio.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -15,7 +15,7 @@ services.AddLogging(configure =>
 });
 
 // Add services
-services.AddSingleton<IAudioCaptureService, WhisperDictation.Daemon.Services.Audio.WasapiAudioCaptureService>();
+services.AddSingleton<IAudioCaptureService, Loquacio.Daemon.Services.Audio.WasapiAudioCaptureService>();
 services.AddSingleton<IWhisperProcessorService, WhisperProcessorService>();
 services.AddSingleton<IModelManagerService, ModelManagerService>();
 services.AddSingleton<ISettingsService, SettingsService>();
@@ -29,7 +29,7 @@ var whisperProcessor = serviceProvider.GetRequiredService<IWhisperProcessorServi
 var modelManager = serviceProvider.GetRequiredService<IModelManagerService>();
 var bgTranscription = serviceProvider.GetRequiredService<IBackgroundTranscriptionService>();
 
-Console.WriteLine("=== Whisper Dictation - Console Test App ===");
+Console.WriteLine("=== Loquacio - Console Test App ===");
 Console.WriteLine();
 
 // Step 1: List available models
@@ -50,7 +50,7 @@ if (downloadedModels.Count == 0)
     Console.WriteLine("No models downloaded.");
     Console.WriteLine();
     Console.WriteLine("To download a model, run:");
-    Console.WriteLine("  WhisperGgmlDownloader -m tiny -o \"%AppData%\\WhisperDictation\\models\\ggml-tiny.bin\"");
+    Console.WriteLine("  WhisperGgmlDownloader -m tiny -o \"%AppData%\\Loquacio\\models\\ggml-tiny.bin\"");
     Console.WriteLine();
     return;
 }

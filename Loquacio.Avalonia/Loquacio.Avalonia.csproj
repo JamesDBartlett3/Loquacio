@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>loquacio-avalonia</AssemblyName>
+    <RootNamespace>Loquacio.Avalonia</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="System" />
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Sockets" />
+    <Using Include="System.Text.Json" />
+    <Using Include="System.Threading" />
+    <Using Include="System.Threading.Tasks" />
+    <Using Include="Loquacio.Models" />
+    <Using Include="Loquacio.Services" />
+    <Using Include="Loquacio.Ipc" />
+    <Using Include="CommunityToolkit.Mvvm.ComponentModel" />
+    <Using Include="CommunityToolkit.Mvvm.Input" />
+    <Using Include="Avalonia" />
+    <Using Include="Avalonia.Controls" />
+    <Using Include="Avalonia.Layout" />
+    <Using Include="Avalonia.Media" />
+    <Using Include="Avalonia.Threading" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.22" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <!-- Pin transitive Tmds.DBus.Protocol to 0.21.3 (CVE-2026-39959 / GHSA-xrw6-gwf8-vvr9).
+         0.21.3 IS the patched release for the 0.21.x line (fix also shipped in 0.92.0),
+         so the pin carries the fix. Upgrading to the 0.9x line renames Connection ->
+         DBusConnection, which breaks Avalonia 11.x (compiled against the 0.2x API).
+         Exposure is low: the app only uses D-Bus as a client via Avalonia desktop
+         integration on the user session bus; the daemon IPC is a private Unix-domain
+         socket, and no D-Bus service is published. Attack requires a malicious peer
+         already on the same session bus (local, same-user). Re-evaluate only when
+         Avalonia ships against the 0.9x API. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Loquacio.Core\Loquacio.Core.csproj" />
+    <ProjectReference Include="..\Loquacio.Shared\Loquacio.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

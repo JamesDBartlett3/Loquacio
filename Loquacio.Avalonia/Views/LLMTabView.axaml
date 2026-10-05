@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Loquacio.Avalonia.Views.LLMTabView">
+    <StackPanel Spacing="16" MaxWidth="500">
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="LLM Post-Processing" FontWeight="SemiBold" FontSize="13" />
+            <CheckBox Content="Enable LLM correction" IsChecked="{Binding Enabled}" />
+            <TextBlock Text="Runs raw Whisper output through a local LLM for punctuation, correction, and filler removal."
+                       FontSize="11" Foreground="#6c7086" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Separator />
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Provider" FontWeight="SemiBold" FontSize="13" />
+            <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding Provider}" />
+        </StackPanel>
+
+        <Separator />
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Endpoint" FontWeight="SemiBold" FontSize="13" />
+            <TextBox Text="{Binding Endpoint}" Watermark="http://localhost:1234/v1" />
+        </StackPanel>
+
+        <Separator />
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Model" FontWeight="SemiBold" FontSize="13" />
+            <TextBox Text="{Binding Model}" Watermark="auto" />
+            <TextBlock Text="'auto' lets the provider pick the first available model."
+                       FontSize="11" Foreground="#6c7086" />
+        </StackPanel>
+
+    </StackPanel>
+</UserControl>

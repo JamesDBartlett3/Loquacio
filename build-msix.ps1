@@ -1,4 +1,4 @@
-# Whisper Dictation — MSIX Build Script
+# Loquacio — MSIX Build Script
 # Run on Windows in PowerShell (not PowerShell Core on Linux)
 # Requires: .NET 10 SDK, Windows SDK, Windows App SDK
 
@@ -13,16 +13,16 @@ param(
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-Write-Host "Building Whisper Dictation MSIX ($Configuration, $Platform)..." -ForegroundColor Cyan
+Write-Host "Building Loquacio MSIX ($Configuration, $Platform)..." -ForegroundColor Cyan
 
 # 1. Restore and build the app
 Write-Host "`n[1/4] Restoring NuGet packages..." -ForegroundColor Yellow
-dotnet restore WhisperDictation.slnx
+dotnet restore Loquacio.slnx
 if ($LASTEXITCODE -ne 0) { throw "Restore failed" }
 
 # 2. Build the WPF app
 Write-Host "`n[2/4] Building WPF application..." -ForegroundColor Yellow
-dotnet build WhisperDictation/WhisperDictation.csproj -c $Configuration -p:Platform=$Platform
+dotnet build Loquacio/Loquacio.csproj -c $Configuration -p:Platform=$Platform
 if ($LASTEXITCODE -ne 0) { throw "Build failed" }
 
 # 3. Build the MSIX package
@@ -37,9 +37,9 @@ if (-not $msbuild) {
 }
 if (-not $msbuild) {
     # Fall back to dotnet build (works if Windows App SDK targets are installed)
-    dotnet build WhisperDictation.Package.wapproj -c $Configuration -p:Platform=$Platform
+    dotnet build Loquacio.Package.wapproj -c $Configuration -p:Platform=$Platform
 } else {
-    & $msbuild WhisperDictation.Package.wapproj /p:Configuration=$Configuration /p:Platform=$Platform /p:AppxBundlePlatforms="$Platform" /p:AppxPackageDir="$PSScriptRoot\MSIXOutput" /p:GenerateAppxPackageOnBuild=true
+    & $msbuild Loquacio.Package.wapproj /p:Configuration=$Configuration /p:Platform=$Platform /p:AppxBundlePlatforms="$Platform" /p:AppxPackageDir="$PSScriptRoot\MSIXOutput" /p:GenerateAppxPackageOnBuild=true
 }
 if ($LASTEXITCODE -ne 0) { throw "MSIX build failed" }
 

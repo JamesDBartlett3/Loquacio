@@ -1,6 +1,6 @@
 # macOS Packaging (Phase D) - Specification
 
-This document specifies the macOS packaging approach for Whisper Dictation. macOS packages must be built on macOS (or in a macOS CI runner).
+This document specifies the macOS packaging approach for Loquacio. macOS packages must be built on macOS (or in a macOS CI runner).
 
 ## Package Format
 
@@ -19,11 +19,11 @@ A Homebrew cask formula for easy installation via `brew install --cask`.
 ## .app Bundle Structure
 
 ```
-WhisperDictation.app/
+Loquacio.app/
 ├── Contents/
 │   ├── Info.plist
 │   ├── MacOS/
-│   │   └── whisper-dictation (launcher script)
+│   │   └── loquacio (launcher script)
 │   ├── Resources/
 │   │   ├── app-icon.icns
 │   │   └── daemon.plist (launchd agent)
@@ -37,7 +37,7 @@ WhisperDictation.app/
 
 The daemon on macOS uses `CGEvent` from the Application Services framework to inject text into the focused window.
 
-**Implementation location:** `WhisperDictation.Daemon/Services/TextInjectionService.cs` (`InjectMacOSAsync` + CGEvent P/Invokes) — **IMPLEMENTED** (2026-09-06). Compiles on any OS; CGEvent calls execute only on macOS. Chunk-planning logic (`SplitMacOSUnicodeChunks`) is internal and unit-tested cross-platform.
+**Implementation location:** `Loquacio.Daemon/Services/TextInjectionService.cs` (`InjectMacOSAsync` + CGEvent P/Invokes) — **IMPLEMENTED** (2026-09-06). Compiles on any OS; CGEvent calls execute only on macOS. Chunk-planning logic (`SplitMacOSUnicodeChunks`) is internal and unit-tested cross-platform.
 
 Clipboard mode uses `pbcopy` + Cmd+V (CGEvent); direct mode types Unicode via `CGEventKeyboardSetUnicodeString` in ≤20-code-unit chunks with `\n` mapped to Return keystrokes.
 
@@ -57,7 +57,7 @@ public static extern void CGEventPost(uint location, IntPtr eventRef);
 
 ### 2. launchd Agent for Daemon Autostart
 
-**Location:** `~/Library/LaunchAgents/com.github.jamesdbartlett3.whisper-dictation.daemon.plist`
+**Location:** `~/Library/LaunchAgents/com.github.jamesdbartlett3.loquacio.daemon.plist`
 
 **Content:**
 ```xml
@@ -66,19 +66,19 @@ public static extern void CGEventPost(uint location, IntPtr eventRef);
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.github.jamesdbartlett3.whisper-dictation.daemon</string>
+    <string>com.github.jamesdbartlett3.loquacio.daemon</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Applications/WhisperDictation.app/Contents/Frameworks/whisper-dictation-daemon</string>
+        <string>/Applications/Loquacio.app/Contents/Frameworks/loquacio-daemon</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>~/Library/Logs/WhisperDictation/daemon.log</string>
+    <string>~/Library/Logs/Loquacio/daemon.log</string>
     <key>StandardErrorPath</key>
-    <string>~/Library/Logs/WhisperDictation/daemon-error.log</string>
+    <string>~/Library/Logs/Loquacio/daemon-error.log</string>
     <key>ProcessType</key>
     <string>Interactive</string>
 </dict>
@@ -91,7 +91,7 @@ public static extern void CGEventPost(uint location, IntPtr eventRef);
 
 **Approach:** Use `NSEvent` global event monitoring in the daemon.
 
-**Implementation:** `WhisperDictation.Daemon/Platform/macOS/MacOSHotkeyService.cs` — **still spec-only** (needs a Mac to develop against).
+**Implementation:** `Loquacio.Daemon/Platform/macOS/MacOSHotkeyService.cs` — **still spec-only** (needs a Mac to develop against).
 
 **Requirements:**
 - Add reference to `AppKit` framework
@@ -104,7 +104,7 @@ public static extern void CGEventPost(uint location, IntPtr eventRef);
 
 **Approach:** Use `AVFoundation` for audio capture.
 
-**Implementation:** `WhisperDictation.Daemon/Platform/macOS/MacOSAudioCaptureService.cs`
+**Implementation:** `Loquacio.Daemon/Platform/macOS/MacOSAudioCaptureService.cs`
 
 **Requirements:**
 - Add reference to `AVFoundation` framework
@@ -159,9 +159,9 @@ jobs:
 
       - name: Publish binaries
         run: |
-          dotnet publish WhisperDictation.Daemon/WhisperDictation.Daemon.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
-          dotnet publish WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
-          dotnet publish WhisperDictation.Tui/WhisperDictation.Tui.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
+          dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
+          dotnet publish Loquacio.Avalonia/Loquacio.Avalonia.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
+          dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
 
       - name: Build .app bundle
         run: packaging/macos/build-app.sh
@@ -169,7 +169,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-dictation-macos
+          name: loquacio-macos
           path: dist/*.app
 ```
 
@@ -201,7 +201,7 @@ jobs:
 
 ## Next Steps
 
-1. Implement macOS platform services in `WhisperDictation.Daemon/Platform/macOS/`
+1. Implement macOS platform services in `Loquacio.Daemon/Platform/macOS/`
 2. Create `packaging/macos/build-app.sh` script
 3. Test on real macOS hardware
 4. Set up GitHub Actions for macOS builds

@@ -1,8 +1,8 @@
-# Whisper Dictation - Implementation Plan
+# Loquacio - Implementation Plan
 
 ## Overview
 
-This plan breaks down the Whisper Dictation implementation into 6 phases over 4 innovation sessions (each ~2 hours). Each phase builds on the previous one, with incremental deliverables and verification steps.
+This plan breaks down the Loquacio implementation into 6 phases over 4 innovation sessions (each ~2 hours). Each phase builds on the previous one, with incremental deliverables and verification steps.
 
 ## Phase Summary
 
@@ -27,7 +27,7 @@ This plan breaks down the Whisper Dictation implementation into 6 phases over 4 
 ### Tasks
 
 #### 1.1 Project Setup
-- [ ] Create WPF project (`WhisperDictation.sln`)
+- [ ] Create WPF project (`Loquacio.sln`)
 - [ ] Target .NET 8
 - [ ] Install NuGet packages:
   - `Whisper.net` (1.9.1+)
@@ -88,7 +88,7 @@ This plan breaks down the Whisper Dictation implementation into 6 phases over 4 
 #### 2.2 Model Management
 - [ ] Implement `WhisperGgmlDownloader` CLI integration
 - [ ] Create `ModelManagerService` for model selection/download
-- [ ] Store models in `AppData\Roaming\WhisperDictation\models\`
+- [ ] Store models in `AppData\Roaming\Loquacio\models\`
 - [ ] UI to select model (tiny, base, small, medium, large-v3)
 
 **Verification:** User can download and switch between models.
@@ -132,7 +132,7 @@ This plan breaks down the Whisper Dictation implementation into 6 phases over 4 
 #### 3.2 Settings Service
 - [ ] Create `ISettingsService` interface
 - [ ] Implement `SettingsService` with JSON serialization
-  - Load/save to `%AppData%\WhisperDictation\settings.json`
+  - Load/save to `%AppData%\Loquacio\settings.json`
   - Validate settings on load
   - Raise `SettingsChanged` event
 - [ ] Integrate with ViewModel (two-way binding)

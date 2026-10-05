@@ -1,14 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using WhisperDictation.Models;
-using WhisperDictation.Services;
+using Loquacio.Models;
+using Loquacio.Services;
 
 namespace CrossPlatformTestConsole;
 
 /// <summary>
 /// Minimal cross-platform smoke-test console. Exercises the platform-neutral
 /// core services (settings + model manager) to verify they load and respond
-/// on any OS supported by WhisperDictation.Core.
+/// on any OS supported by Loquacio.Core.
 /// </summary>
 internal sealed class Program
 {
@@ -26,7 +26,7 @@ internal sealed class Program
         await using var serviceProvider = services.BuildServiceProvider();
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
 
-        logger.LogInformation("Starting Cross-Platform Whisper Dictation Test Console");
+        logger.LogInformation("Starting Cross-Platform Loquacio Test Console");
 
         try
         {

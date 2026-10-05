@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WhisperDictation.Core\WhisperDictation.Core.csproj" />
+    <ProjectReference Include="..\Loquacio.Core\Loquacio.Core.csproj" />
   </ItemGroup>
 
 </Project>

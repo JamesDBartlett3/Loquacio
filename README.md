@@ -1,4 +1,4 @@
-# Whisper Dictation
+# Loquacio
 
 Local Whisper-powered voice-to-text dictation that runs entirely on your machine — no cloud, no telemetry. A headless daemon owns audio capture and transcription; controllers (Avalonia GUI, TUI, and a Windows WPF app) connect to it over a private IPC socket.
 
@@ -37,32 +37,32 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 
 ## Installation
 
-Download a build from the [releases page](http://elitedesk.local:3001/Innovation/whisper-dictation/releases) — all artifacts are self-contained (no .NET runtime required) and include the daemon plus all controllers.
+Download a build from the [releases page](http://elitedesk.local:3001/Innovation/loquacio/releases) — all artifacts are self-contained (no .NET runtime required) and include the daemon plus all controllers.
 
 ### Linux
 
 | Format | Install |
 |--------|---------|
-| AppImage | `chmod +x whisper-dictation-*-x86_64.AppImage && ./whisper-dictation-*-x86_64.AppImage` |
-| .deb | `sudo dpkg -i whisper-dictation_*_amd64.deb` then `systemctl --user enable --now whisper-dictation-daemon.service` |
-| .tar.gz | `tar -xzf whisper-dictation-*-linux-x64.tar.gz` and run the binaries in place |
+| AppImage | `chmod +x loquacio-*-x86_64.AppImage && ./loquacio-*-x86_64.AppImage` |
+| .deb | `sudo dpkg -i loquacio_*_amd64.deb` then `systemctl --user enable --now loquacio-daemon.service` |
+| .tar.gz | `tar -xzf loquacio-*-linux-x64.tar.gz` and run the binaries in place |
 
 ### Windows
 
-- **Portable zip (recommended):** extract `whisper-dictation-*-win-x64-portable.zip` and run the included start script; `Install Daemon.bat` registers the daemon as a scheduled task.
+- **Portable zip (recommended):** extract `loquacio-*-win-x64-portable.zip` and run the included start script; `Install Daemon.bat` registers the daemon as a scheduled task.
 - **MSIX:** build locally with `./build-msix.ps1` on a Windows host (requires code signing for sideload).
 
 ### From Source
 
 ```bash
-git clone ssh://git@elitedesk.local:2222/Innovation/whisper-dictation.git
-cd whisper-dictation
+git clone ssh://git@elitedesk.local:2222/Innovation/loquacio.git
+cd loquacio
 
 # Build on any platform (Windows, Linux, macOS)
 dotnet build -c Release
 
 # Run tests (works on Linux!)
-dotnet test WhisperDictation.Tests -c Release
+dotnet test Loquacio.Tests -c Release
 ```
 
 ### Cross-Platform Development
@@ -71,12 +71,12 @@ The project is structured for cross-platform development:
 
 | Project | Target | Builds on | Tests on |
 |---------|--------|-----------|----------|
-| `WhisperDictation.Core` | net10.0 | Any platform | ✅ Any platform |
-| `WhisperDictation` | net10.0-windows (WPF) | Any platform* | Windows only |
-| `WhisperDictation.Avalonia` | net10.0 | Any platform | ✅ Any platform |
-| `WhisperDictation.Daemon` | net10.0 | Any platform | ✅ Any platform |
-| `WhisperDictation.Tui` | net10.0 | Any platform | ✅ Any platform |
-| `WhisperDictation.Tests` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio.Core` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio` | net10.0-windows (WPF) | Any platform* | Windows only |
+| `Loquacio.Avalonia` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio.Daemon` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio.Tui` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio.Tests` | net10.0 | Any platform | ✅ Any platform |
 | `TestConsole` | net10.0-windows | Any platform* | Windows only |
 
 \* WPF projects compile on Linux/macOS via `<EnableWindowsTargeting>true</EnableWindowsTargeting>` (set in `Directory.Build.props`), but the resulting binary requires the Windows Desktop Runtime to execute.
@@ -88,7 +88,7 @@ The project is structured for cross-platform development:
 
 ### MSIX Packaging
 
-The MSIX installer is built on Windows using the `WhisperDictation.Package.wapproj` packaging project.
+The MSIX installer is built on Windows using the `Loquacio.Package.wapproj` packaging project.
 
 **Prerequisites:**
 - Windows 10/11
@@ -96,9 +96,9 @@ The MSIX installer is built on Windows using the `WhisperDictation.Package.wappr
 - Visual Studio 2022 (Community or higher) **or** Windows App SDK + Windows SDK build tools
 
 **Build from Visual Studio:**
-1. Open `WhisperDictation.slnx`
+1. Open `Loquacio.slnx`
 2. Set configuration to `Release | x64`
-3. Right-click `WhisperDictation.Package` → **Package** → **Create App Packages**
+3. Right-click `Loquacio.Package` → **Package** → **Create App Packages**
 4. Choose sideload or store upload
 
 **Build from command line:**
@@ -165,7 +165,7 @@ Route raw Whisper output through a local LLM for:
 ## Project Structure
 
 ```
-WhisperDictation.Core/       # Cross-platform class library (net10.0)
+Loquacio.Core/       # Cross-platform class library (net10.0)
 ├── Models/                  # Data models (Settings, AudioSegment, etc.)
 ├── Infrastructure/          # Channels, cross-cutting concerns
 ├── Services/                # Cross-platform services + interfaces
@@ -176,7 +176,7 @@ WhisperDictation.Core/       # Cross-platform class library (net10.0)
 │   ├── Background*          # Transcription orchestration
 │   └── KeywordDetection*    # Energy VAD
 
-WhisperDictation/            # WPF application (net10.0-windows)
+Loquacio/            # WPF application (net10.0-windows)
 ├── Services/                # Windows-specific services
 │   ├── AudioCapture*        # WASAPI audio capture (NAudio)
 │   ├── Hotkey*              # Global hotkeys (Win32)
@@ -191,7 +191,7 @@ WhisperDictation/            # WPF application (net10.0-windows)
 ├── App.xaml                 # Application entry point
 └── MainWindow.xaml          # Main window
 
-WhisperDictation.Tests/      # Unit tests (net10.0, cross-platform)
+Loquacio.Tests/      # Unit tests (net10.0, cross-platform)
 ├── Models/                  # Model tests
 ├── Services/                # Service interface tests
 ├── Infrastructure/          # Channel tests

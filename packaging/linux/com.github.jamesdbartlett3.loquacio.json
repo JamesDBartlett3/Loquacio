@@ -1,0 +1,102 @@
+{
+  "app-id": "com.github.jamesdbartlett3.loquacio",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "24.08",
+  "sdk": "org.freedesktop.Sdk",
+  "base": "org.freedesktop.Platform.Dotnet",
+  "base-version": "8.0",
+  "command": "loquacio-avalonia",
+  "finish-args": [
+    "--share=ipc",
+    "--socket=x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--share=network",
+    "--socket=pulseaudio",
+    "--filesystem=home:ro",
+    "--talk-name=org.freedesktop.Notifications",
+    "--talk-name=org.a11y.Bus",
+    "--system-talk-name=org.freedesktop.login1"
+  ],
+  "build-options": {
+    "env": {
+      "DOTNET_CLI_TELEMETRY_OPTOUT": "true"
+    }
+  },
+  "cleanup": [
+    "/include",
+    "/lib/pkgconfig",
+    "/share/man",
+    "*.a",
+    "*.la"
+  ],
+  "modules": [
+    {
+      "name": "loquacio",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/lib/loquacio",
+        "mkdir -p /app/bin",
+        "mkdir -p /app/share/applications",
+        "mkdir -p /app/share/icons/hicolor/256x256/apps",
+        "mkdir -p /app/share/doc/loquacio",
+
+        "cp -r Loquacio.Daemon/bin/Release/net10.0/linux-x64/publish/* /app/lib/loquacio/",
+        "cp -r Loquacio.Tui/bin/Release/net10.0/linux-x64/publish/* /app/lib/loquacio/",
+        "cp -r Loquacio.Avalonia/bin/Release/net10.0/linux-x64/publish/* /app/lib/loquacio/",
+
+        "chmod 755 /app/lib/loquacio/loquacio-daemon",
+        "chmod 755 /app/lib/loquacio/loquacio-tui",
+        "chmod 755 /app/lib/loquacio/loquacio-avalonia",
+
+        "cat > /app/bin/loquacio-daemon << 'EOF'\n#!/bin/sh\ncd /app/lib/loquacio\nexec ./loquacio-daemon \"$@\"\nEOF",
+        "cat > /app/bin/loquacio-tui << 'EOF'\n#!/bin/sh\ncd /app/lib/loquacio\nexec ./loquacio-tui \"$@\"\nEOF",
+        "cat > /app/bin/loquacio-avalonia << 'EOF'\n#!/bin/sh\ncd /app/lib/loquacio\nexec ./loquacio-avalonia \"$@\"\nEOF",
+
+        "chmod 755 /app/bin/loquacio-daemon",
+        "chmod 755 /app/bin/loquacio-tui",
+        "chmod 755 /app/bin/loquacio-avalonia",
+
+        "cp README.md LICENSE /app/share/doc/loquacio/ 2>/dev/null || true"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": ".",
+          "skip": [
+            ".git",
+            "dist",
+            "bin",
+            "obj",
+            "packaging/linux/dist",
+            "*.user",
+            "*.suo"
+          ]
+        }
+      ],
+      "post-install": [
+        "dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false Loquacio.Daemon/Loquacio.Daemon.csproj",
+        "dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false Loquacio.Tui/Loquacio.Tui.csproj",
+        "dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false Loquacio.Avalonia/Loquacio.Avalonia.csproj"
+      ]
+    },
+    {
+      "name": "desktop-file",
+      "buildsystem": "simple",
+      "build-commands": [
+        "install -Dm644 com.github.jamesdbartlett3.loquacio.desktop /app/share/applications/com.github.jamesdbartlett3.loquacio.desktop",
+        "install -Dm644 com.github.jamesdbartlett3.loquacio.svg /app/share/icons/hicolor/256x256/apps/com.github.jamesdbartlett3.loquacio.svg"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "path": "packaging/linux/flatpak/com.github.jamesdbartlett3.loquacio.desktop"
+        },
+        {
+          "type": "file",
+          "path": "packaging/linux/flatpak/com.github.jamesdbartlett3.loquacio.svg"
+        }
+      ]
+    }
+  ]
+}

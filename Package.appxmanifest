@@ -4,13 +4,13 @@
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
          IgnorableNamespaces="uap rescap">
 
-  <Identity Name="Innovation.WhisperDictation"
-            Publisher="CN=WhisperDictation"
+  <Identity Name="Innovation.Loquacio"
+            Publisher="CN=Loquacio"
             Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>Whisper Dictation</DisplayName>
-    <PublisherDisplayName>WhisperDictation</PublisherDisplayName>
+    <DisplayName>Loquacio</DisplayName>
+    <PublisherDisplayName>Loquacio</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
     <Description>Voice dictation app using Whisper AI for accurate transcription</Description>
   </Properties>
@@ -32,7 +32,7 @@
     <Application Id="App"
                  Executable="$targetnametoken$.exe"
                  EntryPoint="$targetentrypoint$">
-      <uap:VisualElements DisplayName="Whisper Dictation"
+      <uap:VisualElements DisplayName="Loquacio"
                           Square150x150Logo="Assets\Square150x150Logo.png"
                           Square44x44Logo="Assets\Square44x44Logo.png"
                           Description="Voice dictation using Whisper AI"
@@ -46,17 +46,17 @@
 
       <Extensions>
         <uap:Extension Category="windows.protocol">
-          <uap:Protocol Name="whisperdictation">
-            <uap:DisplayName>Whisper Dictation Protocol</uap:DisplayName>
+          <uap:Protocol Name="loquacio">
+            <uap:DisplayName>Loquacio Protocol</uap:DisplayName>
           </uap:Protocol>
         </uap:Extension>
 
         <!-- Auto-start via Windows StartupTask (MSIX replaces registry-based auto-start) -->
         <uap:Extension Category="windows.startupTask">
-          <uap:StartupTask TaskId="WhisperDictationStartup"
+          <uap:StartupTask TaskId="LoquacioStartup"
                            Enabled="false"
-                           DisplayName="Whisper Dictation"
-                           Description="Starts Whisper Dictation when you sign in to Windows." />
+                           DisplayName="Loquacio"
+                           Description="Starts Loquacio when you sign in to Windows." />
         </uap:Extension>
       </Extensions>
     </Application>

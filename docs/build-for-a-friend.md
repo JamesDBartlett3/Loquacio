@@ -9,7 +9,7 @@
 
 My friend [name] has [one line: why typing is hard or unpleasant for them — RSI, a wrist injury, dyslexia, or simply "talks three times faster than they type"]. Every voice-to-text option they tried had the same catch: their voice, recorded in their own home, streamed to somebody else's datacenter. They hated it, so they just... kept typing.
 
-So I built them **Whisper Dictation**: a desktop dictation app where every millisecond of audio stays on the machine it was spoken into. Speech recognition runs on a local Whisper model through [Whisper.net](https://github.com/sandrohanea/whisper.net). If they want punctuation and filler-word cleanup, that goes through their *own* local LLM — LM Studio or Ollama on localhost. The only network connection the app ever needs is to download the Whisper model files the first time. After that, it works on a plane.
+So I built them **Loquacio**: a desktop dictation app where every millisecond of audio stays on the machine it was spoken into. Speech recognition runs on a local Whisper model through [Whisper.net](https://github.com/sandrohanea/whisper.net). If they want punctuation and filler-word cleanup, that goes through their *own* local LLM — LM Studio or Ollama on localhost. The only network connection the app ever needs is to download the Whisper model files the first time. After that, it works on a plane.
 
 It's not a toy voice-note recorder — it's a real dictation workflow:
 
@@ -35,16 +35,16 @@ The app itself ships as self-contained desktop builds (no runtime installation n
 | Linux | `.AppImage`, `.deb` (with a systemd user service), portable `.tar.gz` |
 | Windows 10/11 | portable `.zip` with daemon auto-start script; MSIX buildable on a Windows host |
 
-Releases: [v0.1.0 on Forgejo](http://elitedesk.local:3001/Innovation/whisper-dictation/releases/tag/v0.1.0)
+Releases: [v0.1.0 on Forgejo](http://elitedesk.local:3001/Innovation/loquacio/releases/tag/v0.1.0)
 
 ## Code
 
-The full source is on my self-hosted Forgejo instance: [Innovation/whisper-dictation](http://elitedesk.local:3001/Innovation/whisper-dictation) (private, but I'm happy to share access — ask).
+The full source is on my self-hosted Forgejo instance: [Innovation/loquacio](http://elitedesk.local:3001/Innovation/loquacio) (private, but I'm happy to share access — ask).
 
 ```bash
-git clone ssh://git@elitedesk.local:2222/Innovation/whisper-dictation.git
+git clone ssh://git@elitedesk.local:2222/Innovation/loquacio.git
 dotnet build -c Release
-dotnet test WhisperDictation.Tests -c Release   # 373 tests, all platforms
+dotnet test Loquacio.Tests -c Release   # 373 tests, all platforms
 ```
 
 .NET 10, C#, MIT licensed. The test suite runs on Linux and Windows alike — including the daemon, IPC, and transcription pipeline.

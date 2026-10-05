@@ -1,8 +1,8 @@
-# Whisper Dictation - Development Specification
+# Loquacio - Development Specification
 
 ## Project Overview
 
-**Project Name:** Whisper Dictation
+**Project Name:** Loquacio
 **Type:** Desktop Application (WPF / C#)
 **Purpose:** Local Whisper-powered voice-to-text application for Windows with continuous and push-to-talk modes, local LLM post-processing, and system tray integration.
 
@@ -47,7 +47,7 @@ So that I can dictate documents, code, notes, or messages quickly and accurately
 
 #### Whisper Processing
 - **Model Selection:** User downloads/selects from Whisper model list (tiny, base, small, medium, large-v3)
-- **Storage:** Models stored in `AppData\Roaming\WhisperDictation\models\`
+- **Storage:** Models stored in `AppData\Roaming\Loquacio\models\`
 - **Single Instance:** One Whisper.net processor instance processes segments sequentially from queue
 - **Language Detection:** Auto-detect or user-specified language
 - **Output:** Raw Whisper output as text segment
@@ -60,7 +60,7 @@ So that I can dictate documents, code, notes, or messages quickly and accurately
 - **Punctuation:** Auto-add sentence-ending punctuation
 
 #### Custom Vocabulary
-- **Dictionary Format:** JSON file at `AppData\Roaming\WhisperDictation\custom-vocab.json`
+- **Dictionary Format:** JSON file at `AppData\Roaming\Loquacio\custom-vocab.json`
 - **Structure:** `{"terms": ["domain-specific-term1", "term2", ...]}`
 - **Usage:** Whisper context boost (if supported) or LLM hinting in prompt
 - **Editor:** Simple text editor in Settings UI for adding/removing terms
@@ -68,7 +68,7 @@ So that I can dictate documents, code, notes, or messages quickly and accurately
 #### Output
 - **Clipboard Mode (Default):** Auto-copy processed text to Windows clipboard
 - **Type-Out Mode:** Simulate keystrokes to type into active window (optional)
-- **History Log:** Save all processed segments to `AppData\Roaming\WhisperDictation\history.json`
+- **History Log:** Save all processed segments to `AppData\Roaming\Loquacio\history.json`
 - **Hotkey for Last Output:** User can re-copy last output with hotkey
 
 #### Hotkeys
@@ -125,7 +125,7 @@ So that I can dictate documents, code, notes, or messages quickly and accurately
 ### Component Architecture
 
 ```
-WhisperDictation (WPF App)
+Loquacio (WPF App)
 ├── Presentation (WPF Views + ViewModels)
 │   ├── MainWindow.xaml (Settings, Model selection, Audio source)
 │   ├── TrayIconViewModel (Tray icon, context menu)
@@ -215,7 +215,7 @@ public interface IOutputService
 ### Settings Storage
 
 - **Format:** JSON
-- **Location:** `%AppData%\WhisperDictation\settings.json`
+- **Location:** `%AppData%\Loquacio\settings.json`
 - **Schema:**
 ```json
 {

@@ -1,6 +1,6 @@
 # Cross-Platform Packaging (Phase D)
 
-This directory contains packaging scripts and specifications for Whisper Dictation across all supported platforms.
+This directory contains packaging scripts and specifications for Loquacio across all supported platforms.
 
 ## Platform Coverage
 
@@ -22,7 +22,7 @@ This directory contains packaging scripts and specifications for Whisper Dictati
 ./packaging/linux/build-appimage.sh
 
 # Build Flatpak (requires flatpak installed)
-flatpak-builder --repo=flatpak-repo flatpak-build packaging/linux/com.github.jamesdbartlett3.whisper-dictation.json
+flatpak-builder --repo=flatpak-repo flatpak-build packaging/linux/com.github.jamesdbartlett3.loquacio.json
 ```
 
 ### Package Formats
@@ -31,16 +31,16 @@ flatpak-builder --repo=flatpak-repo flatpak-build packaging/linux/com.github.jam
 
 **Script:** `packaging/linux/build-packages.sh`
 
-**Output:** `dist/whisper-dictation_<version>_amd64.deb`
+**Output:** `dist/loquacio_<version>_amd64.deb`
 
 **Installation:**
 ```bash
-sudo dpkg -i dist/whisper-dictation_*_amd64.deb
-systemctl --user enable --now whisper-dictation-daemon.service
+sudo dpkg -i dist/loquacio_*_amd64.deb
+systemctl --user enable --now loquacio-daemon.service
 ```
 
 **Features:**
-- Installs to `/usr/lib/whisper-dictation/`
+- Installs to `/usr/lib/loquacio/`
 - Wrapper scripts in `/usr/bin/`
 - Systemd user service (`~/.config/systemd/user/`)
 - Dependencies: `libasound2`, `pipewire` or `pulseaudio`
@@ -49,15 +49,15 @@ systemctl --user enable --now whisper-dictation-daemon.service
 
 **Script:** `packaging/linux/build-packages.sh`
 
-**Output:** `dist/whisper-dictation-<version>-linux-x64.tar.gz`
+**Output:** `dist/loquacio-<version>-linux-x64.tar.gz`
 
 **Usage:**
 ```bash
-tar -xzf whisper-dictation-<version>-linux-x64.tar.gz
-cd whisper-dictation
-./whisper-dictation-daemon
-./whisper-dictation-tui
-./whisper-dictation-avalonia
+tar -xzf loquacio-<version>-linux-x64.tar.gz
+cd loquacio
+./loquacio-daemon
+./loquacio-tui
+./loquacio-avalonia
 ```
 
 **Features:**
@@ -69,12 +69,12 @@ cd whisper-dictation
 
 **Script:** `packaging/linux/build-appimage.sh`
 
-**Output:** `dist/whisper-dictation-<version>-x86_64.AppImage`
+**Output:** `dist/loquacio-<version>-x86_64.AppImage`
 
 **Usage:**
 ```bash
-chmod +x whisper-dictation-<version>-x86_64.AppImage
-./whisper-dictation-<version>-x86_64.AppImage
+chmod +x loquacio-<version>-x86_64.AppImage
+./loquacio-<version>-x86_64.AppImage
 ```
 
 **Features:**
@@ -85,19 +85,19 @@ chmod +x whisper-dictation-<version>-x86_64.AppImage
 
 #### 4. Flatpak
 
-**Manifest:** `packaging/linux/com.github.jamesdbartlett3.whisper-dictation.json`
+**Manifest:** `packaging/linux/com.github.jamesdbartlett3.loquacio.json`
 
 **Build:**
 ```bash
 flatpak install flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.freedesktop.Platform.Dotnet//8.0
-flatpak-builder --repo=flatpak-repo flatpak-build packaging/linux/com.github.jamesdbartlett3.whisper-dictation.json
-flatpak build-bundle flatpak-repo whisper-dictation.flatpak com.github.jamesdbartlett3.whisper-dictation
+flatpak-builder --repo=flatpak-repo flatpak-build packaging/linux/com.github.jamesdbartlett3.loquacio.json
+flatpak build-bundle flatpak-repo loquacio.flatpak com.github.jamesdbartlett3.loquacio
 ```
 
 **Installation:**
 ```bash
-flatpak install whisper-dictation.flatpak
-flatpak run com.github.jamesdbartlett3.whisper-dictation
+flatpak install loquacio.flatpak
+flatpak run com.github.jamesdbartlett3.loquacio
 ```
 
 **Features:**
@@ -110,8 +110,8 @@ flatpak run com.github.jamesdbartlett3.whisper-dictation
 `build-portable.ps1` was executed on Linux (PowerShell 7.6.5, dotnet SDK 10.0.112) as a cross-publish validation:
 
 - `dotnet publish -r win-x64 --self-contained` succeeded for Daemon, WPF app, and TUI (0 errors)
-- Artifact: `dist/whisper-dictation-0.0.0.gitf17e126-win-x64-portable.zip` (86,067,634 bytes, 571 files)
-- Contains whisper-dictation-daemon.exe, whisper-dictation-tui.exe, WhisperDictation.exe (all PE32+ / MZ magic verified), plus Start/Install/Uninstall .bat helpers
+- Artifact: `dist/loquacio-0.0.0.gitf17e126-win-x64-portable.zip` (86,067,634 bytes, 571 files)
+- Contains loquacio-daemon.exe, loquacio-tui.exe, Loquacio.exe (all PE32+ / MZ magic verified), plus Start/Install/Uninstall .bat helpers
 - NOT executed (no Windows on this host): runtime behavior, Task Scheduler scripts, and MSIX packaging (build-msix.ps1 requires makeappx on Windows). Runtime verification on a Windows 11 host is the remaining follow-up (see Kanboard #38).
 
 ## Windows Packaging (`windows/`)
@@ -137,11 +137,11 @@ flatpak run com.github.jamesdbartlett3.whisper-dictation
 
 **Script:** `packaging/windows/build-msix.ps1`
 
-**Output:** `dist/WhisperDictation.Package_<version>_x64.msix`
+**Output:** `dist/Loquacio.Package_<version>_x64.msix`
 
 **Installation:**
 ```powershell
-Add-AppxPackage .\dist\WhisperDictation.Package_*.msix
+Add-AppxPackage .\dist\Loquacio.Package_*.msix
 ```
 
 **Features:**
@@ -153,12 +153,12 @@ Add-AppxPackage .\dist\WhisperDictation.Package_*.msix
 
 **Script:** `packaging/windows/build-portable.ps1`
 
-**Output:** `dist/whisper-dictation-<version>-win-x64-portable.zip`
+**Output:** `dist/loquacio-<version>-win-x64-portable.zip`
 
 **Usage:**
 ```powershell
 # Extract and run
-Expand-Archive .\whisper-dictation-*-win-x64-portable.zip -DestinationPath .
+Expand-Archive .\loquacio-*-win-x64-portable.zip -DestinationPath .
 .\Start\ Whisper\ Dictation.bat
 
 # Install daemon as scheduled task
@@ -181,7 +181,7 @@ Expand-Archive .\whisper-dictation-*-win-x64-portable.zip -DestinationPath .
 ./packaging/macos/build-app.sh
 
 # This will create:
-# - dist/WhisperDictation.app
+# - dist/Loquacio.app
 # - Launchd agent template
 # - Code-signed application
 ```
@@ -192,12 +192,12 @@ Expand-Archive .\whisper-dictation-*-win-x64-portable.zip -DestinationPath .
 
 **Script:** `packaging/macos/build-app.sh` (macOS only)
 
-**Output:** `dist/WhisperDictation.app`
+**Output:** `dist/Loquacio.app`
 
 **Installation:**
 ```bash
-cp -R dist/WhisperDictation.app /Applications/
-open /Applications/WhisperDictation.app
+cp -R dist/Loquacio.app /Applications/
+open /Applications/Loquacio.app
 ```
 
 **Features:**
@@ -208,11 +208,11 @@ open /Applications/WhisperDictation.app
 
 ### Homebrew Cask
 
-**Formula:** `packaging/macos/whisper-dictation.rb`
+**Formula:** `packaging/macos/loquacio.rb`
 
 **Installation:**
 ```bash
-brew install --cask whisper-dictation
+brew install --cask loquacio
 ```
 
 **CI/CD:**
@@ -226,9 +226,9 @@ Builds .app bundle on macOS runners and uploads as artifact.
 ### Implementation
 
 The auto-update service is implemented in:
-- `WhisperDictation.Core/Services/IUpdateService.cs` - Interface
-- `WhisperDictation.Daemon/Services/GitHubUpdateService.cs` - GitHub-based implementation
-- Registered in `WhisperDictation.Daemon/DaemonServiceRegistration.cs`
+- `Loquacio.Core/Services/IUpdateService.cs` - Interface
+- `Loquacio.Daemon/Services/GitHubUpdateService.cs` - GitHub-based implementation
+- Registered in `Loquacio.Daemon/DaemonServiceRegistration.cs`
 
 ### How It Works
 
@@ -293,30 +293,30 @@ After building packages, verify:
 ### Linux
 ```bash
 # Test .deb
-sudo dpkg -i dist/whisper-dictation_*.deb
-systemctl --user start whisper-dictation-daemon.service
-/usr/bin/whisper-dictation-tui
+sudo dpkg -i dist/loquacio_*.deb
+systemctl --user start loquacio-daemon.service
+/usr/bin/loquacio-tui
 
 # Test AppImage
-chmod +x dist/whisper-dictation-*.AppImage
-./dist/whisper-dictation-*.AppImage
+chmod +x dist/loquacio-*.AppImage
+./dist/loquacio-*.AppImage
 
 # Test Flatpak
-flatpak install whisper-dictation.flatpak
-flatpak run com.github.jamesdbartlett3.whisper-dictation
+flatpak install loquacio.flatpak
+flatpak run com.github.jamesdbartlett3.loquacio
 ```
 
 ### Windows
 ```powershell
 # Test portable
-Expand-Archive .\dist\whisper-dictation-*-win-x64-portable.zip -DestinationPath .\test
+Expand-Archive .\dist\loquacio-*-win-x64-portable.zip -DestinationPath .\test
 .\test\Start\ Whisper\ Dictation.bat
 ```
 
 ### macOS (on macOS)
 ```bash
 # Test .app
-open dist/WhisperDictation.app
+open dist/Loquacio.app
 ```
 
 ## Distribution
@@ -327,13 +327,13 @@ All packages should be attached to GitHub releases:
 
 1. Create a release on GitHub
 2. Attach package files:
-   - `whisper-dictation-<version>-linux-x64.tar.gz`
-   - `whisper-dictation_<version>_amd64.deb`
-   - `whisper-dictation-<version>-x86_64.AppImage`
-   - `whisper-dictation.flatpak`
-   - `whisper-dictation-<version>-win-x64-portable.zip`
-   - `WhisperDictation.Package_<version>_x64.msix`
-   - `WhisperDictation.app` (as ZIP)
+   - `loquacio-<version>-linux-x64.tar.gz`
+   - `loquacio_<version>_amd64.deb`
+   - `loquacio-<version>-x86_64.AppImage`
+   - `loquacio.flatpak`
+   - `loquacio-<version>-win-x64-portable.zip`
+   - `Loquacio.Package_<version>_x64.msix`
+   - `Loquacio.app` (as ZIP)
 
 ### Package Repositories
 
@@ -357,10 +357,10 @@ All packages should be attached to GitHub releases:
 **Problem:** AppImage won't run
 ```bash
 # Check permissions
-chmod +x whisper-dictation-*.AppImage
+chmod +x loquacio-*.AppImage
 
 # Check FUSE
-./whisper-dictation-*.AppImage --appimage-extract
+./loquacio-*.AppImage --appimage-extract
 # If FUSE not available, extract and run directly
 ```
 
@@ -387,10 +387,10 @@ winver
 **Problem:** .app won't open
 ```bash
 # Check code signature
-codesign -dv --verbose=4 WhisperDictation.app
+codesign -dv --verbose=4 Loquacio.app
 
 # If unsigned, sign with ad-hoc
-codesign --force --deep --sign - WhisperDictation.app
+codesign --force --deep --sign - Loquacio.app
 ```
 
 ## Contributing

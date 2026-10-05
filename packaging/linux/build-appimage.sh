@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build AppImage for whisper-dictation (Phase D task 2 continuation).
+# Build AppImage for loquacio (Phase D task 2 continuation).
 # Usage:
 #   packaging/linux/build-appimage.sh [--skip-build]
 #
@@ -28,7 +28,7 @@ fi
 
 DIST="$REPO_ROOT/dist"
 PUBLISH="$DIST/publish/linux-x64"
-APP=whisper-dictation
+APP=loquacio
 APPDIR="$DIST/AppDir"
 
 # Version info
@@ -47,27 +47,27 @@ mkdir -p "$APPDIR/usr/lib/$APP"
 
 # Copy published binaries
 cp -r "$PUBLISH"/. "$APPDIR/usr/lib/$APP/"
-chmod 755 "$APPDIR/usr/lib/$APP/whisper-dictation-daemon"
-chmod 755 "$APPDIR/usr/lib/$APP/whisper-dictation-tui"
-chmod 755 "$APPDIR/usr/lib/$APP/whisper-dictation-avalonia" 2>/dev/null || true
+chmod 755 "$APPDIR/usr/lib/$APP/loquacio-daemon"
+chmod 755 "$APPDIR/usr/lib/$APP/loquacio-tui"
+chmod 755 "$APPDIR/usr/lib/$APP/loquacio-avalonia" 2>/dev/null || true
 
 # Create wrapper scripts in /usr/bin
-cat > "$APPDIR/usr/bin/whisper-dictation-daemon" <<'EOS'
+cat > "$APPDIR/usr/bin/loquacio-daemon" <<'EOS'
 #!/bin/sh
-cd "$(dirname "$0")/../lib/whisper-dictation"
-exec ./whisper-dictation-daemon "$@"
+cd "$(dirname "$0")/../lib/loquacio"
+exec ./loquacio-daemon "$@"
 EOS
-cat > "$APPDIR/usr/bin/whisper-dictation-tui" <<'EOS'
+cat > "$APPDIR/usr/bin/loquacio-tui" <<'EOS'
 #!/bin/sh
-cd "$(dirname "$0")/../lib/whisper-dictation"
-exec ./whisper-dictation-tui "$@"
+cd "$(dirname "$0")/../lib/loquacio"
+exec ./loquacio-tui "$@"
 EOS
-cat > "$APPDIR/usr/bin/whisper-dictation-avalonia" <<'EOS'
+cat > "$APPDIR/usr/bin/loquacio-avalonia" <<'EOS'
 #!/bin/sh
-cd "$(dirname "$0")/../lib/whisper-dictation"
-exec ./whisper-dictation-avalonia "$@"
+cd "$(dirname "$0")/../lib/loquacio"
+exec ./loquacio-avalonia "$@"
 EOS
-chmod 755 "$APPDIR/usr/bin/whisper-dictation-"*
+chmod 755 "$APPDIR/usr/bin/loquacio-"*
 
 # ---- Copy documentation ----
 cp README.md LICENSE "$APPDIR/usr/share/doc/$APP/" 2>/dev/null || true
@@ -75,10 +75,10 @@ cp README.md LICENSE "$APPDIR/usr/share/doc/$APP/" 2>/dev/null || true
 # ---- Create .desktop file ----
 cat > "$APPDIR/usr/share/applications/$APP.desktop" <<EOF
 [Desktop Entry]
-Name=Whisper Dictation
+Name=Loquacio
 Comment=Local Whisper-powered voice-to-text dictation
-Exec=whisper-dictation-avalonia
-Icon=whisper-dictation
+Exec=loquacio-avalonia
+Icon=loquacio
 Type=Application
 Categories=Utility;
 Terminal=false
@@ -87,7 +87,7 @@ Keywords=voice;dictation;speech;transcription;whisper;
 EOF
 
 # ---- Create icon (simple SVG) ----
-cat > "$APPDIR/usr/share/icons/hicolor/256x256/apps/whisper-dictation.svg" <<'EOF'
+cat > "$APPDIR/usr/share/icons/hicolor/256x256/apps/loquacio.svg" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
   <defs>
@@ -105,7 +105,7 @@ cat > "$APPDIR/usr/share/icons/hicolor/256x256/apps/whisper-dictation.svg" <<'EO
 EOF
 # appimagetool expects the .desktop and icon at the AppDir root
 cp "$APPDIR/usr/share/applications/$APP.desktop" "$APPDIR/"
-cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/whisper-dictation.svg" "$APPDIR/"
+cp "$APPDIR/usr/share/icons/hicolor/256x256/apps/loquacio.svg" "$APPDIR/"
 
 # ---- Create AppRun script ----
 cat > "$APPDIR/AppRun" <<'EOS'
@@ -113,17 +113,17 @@ cat > "$APPDIR/AppRun" <<'EOS'
 cd "$(dirname "$0")"
 
 # Export library path for bundled dependencies
-export LD_LIBRARY_PATH="${APPDIR}/usr/lib/whisper-dictation:${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="${APPDIR}/usr/lib/loquacio:${LD_LIBRARY_PATH:-}"
 
 # Add /usr/bin to PATH
 export PATH="${APPDIR}/usr/bin:${PATH:-}"
 
 # Launch the requested controller; default is the GUI (avalonia)
 case "${1:-}" in
-  daemon|whisper-dictation-daemon) shift; exec whisper-dictation-daemon "$@" ;;
-  tui|whisper-dictation-tui) shift; exec whisper-dictation-tui "$@" ;;
+  daemon|loquacio-daemon) shift; exec loquacio-daemon "$@" ;;
+  tui|loquacio-tui) shift; exec loquacio-tui "$@" ;;
 esac
-exec whisper-dictation-avalonia "$@"
+exec loquacio-avalonia "$@"
 EOS
 chmod 755 "$APPDIR/AppRun"
 
@@ -158,4 +158,4 @@ echo "  ./$OUTPUT"
 echo ""
 echo "To install system-wide:"
 echo "  sudo cp $OUTPUT /opt/"
-echo "  sudo ln -s /opt/$(basename $OUTPUT) /usr/local/bin/whisper-dictation"
+echo "  sudo ln -s /opt/$(basename $OUTPUT) /usr/local/bin/loquacio"

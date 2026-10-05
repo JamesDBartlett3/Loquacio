@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Loquacio
+Comment=Local Whisper-powered voice-to-text dictation
+Exec=loquacio-avalonia
+Icon=com.github.jamesdbartlett3.loquacio
+Type=Application
+Categories=Audio;AudioVideo;Utility;
+Terminal=false
+StartupNotify=true
+Keywords=voice;dictation;speech;transcription;whisper;
+X-Purism-FormFactor=Workstation;Mobile;

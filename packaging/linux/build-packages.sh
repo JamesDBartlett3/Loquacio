@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build self-contained Linux packages for whisper-dictation (Phase D task 2).
+# Build self-contained Linux packages for loquacio (Phase D task 2).
 # Usage:
 #   packaging/linux/build-packages.sh                # docker publish + host packaging
 #   packaging/linux/build-packages.sh --build-only   # publish only (already inside docker / native dotnet)
@@ -17,7 +17,7 @@ RID=linux-x64
 CONFIGURATION=Release
 DIST="$REPO_ROOT/dist"
 PUBLISH="$DIST/publish/$RID"
-APP=whisper-dictation
+APP=loquacio
 
 BUILD_ONLY=false
 SKIP_PUBLISH=false
@@ -37,9 +37,9 @@ publish() {
 
 if [[ "$SKIP_PUBLISH" != true ]]; then
   if command -v dotnet >/dev/null 2>&1; then
-    publish WhisperDictation.Daemon/WhisperDictation.Daemon.csproj
-    publish WhisperDictation.Tui/WhisperDictation.Tui.csproj
-    publish WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj
+    publish Loquacio.Daemon/Loquacio.Daemon.csproj
+    publish Loquacio.Tui/Loquacio.Tui.csproj
+    publish Loquacio.Avalonia/Loquacio.Avalonia.csproj
   else
     echo "No local dotnet — running publish inside docker"
     docker run --rm \
@@ -72,29 +72,29 @@ mkdir -p "$LIBDIR" "$BINDIR" "$PKGROOT/DEBIAN" \
   "$PKGROOT/usr/lib/systemd/user"
 
 cp -r "$PUBLISH"/. "$LIBDIR/"
-chmod 755 "$LIBDIR/whisper-dictation-daemon" \
-          "$LIBDIR/whisper-dictation-tui" \
-          "$LIBDIR/whisper-dictation-avalonia" 2>/dev/null || true
-install -m 644 "$SCRIPT_DIR/whisper-dictation-daemon.service" \
-  "$PKGROOT/usr/lib/systemd/user/whisper-dictation-daemon.service"
+chmod 755 "$LIBDIR/loquacio-daemon" \
+          "$LIBDIR/loquacio-tui" \
+          "$LIBDIR/loquacio-avalonia" 2>/dev/null || true
+install -m 644 "$SCRIPT_DIR/loquacio-daemon.service" \
+  "$PKGROOT/usr/lib/systemd/user/loquacio-daemon.service"
 
 # Thin launch wrappers so /usr/bin entries are just the per-app host binaries.
-cat > "$BINDIR/whisper-dictation-daemon" <<'EOS'
+cat > "$BINDIR/loquacio-daemon" <<'EOS'
 #!/bin/sh
-exec /usr/lib/whisper-dictation/whisper-dictation-daemon "$@"
+exec /usr/lib/loquacio/loquacio-daemon "$@"
 EOS
-cat > "$BINDIR/whisper-dictation-tui" <<'EOS'
+cat > "$BINDIR/loquacio-tui" <<'EOS'
 #!/bin/sh
-exec /usr/lib/whisper-dictation/whisper-dictation-tui "$@"
+exec /usr/lib/loquacio/loquacio-tui "$@"
 EOS
-cat > "$BINDIR/whisper-dictation-avalonia" <<'EOS'
+cat > "$BINDIR/loquacio-avalonia" <<'EOS'
 #!/bin/sh
-exec /usr/lib/whisper-dictation/whisper-dictation-avalonia "$@"
+exec /usr/lib/loquacio/loquacio-avalonia "$@"
 EOS
-chmod 755 "$BINDIR"/whisper-dictation-*
+chmod 755 "$BINDIR"/loquacio-*
 
 cat > "$PKGROOT/DEBIAN/control" <<EOF
-Package: whisper-dictation
+Package: loquacio
 Version: ${VERSION}
 Section: sound
 Priority: optional
@@ -105,19 +105,19 @@ Description: Local Whisper-powered voice-to-text dictation (daemon + TUI + GUI)
  Self-contained local dictation stack: audio capture (PipeWire), Whisper
  transcription, optional local-LLM post-processing. Includes the daemon,
  a TUI controller, an Avalonia GUI controller, and a systemd user unit.
- Installed to /usr/lib/whisper-dictation; no .NET runtime required.
-Homepage: https://elitedesk.local:3001/Innovation/whisper-dictation
+ Installed to /usr/lib/loquacio; no .NET runtime required.
+Homepage: https://elitedesk.local:3001/Innovation/loquacio
 EOF
 cat > "$PKGROOT/DEBIAN/postinst" <<'EOS'
 #!/bin/sh
 set -e
 systemctl --user daemon-reload >/dev/null 2>&1 || true
-echo "whisper-dictation installed. Enable the daemon with:"
-echo "  systemctl --user enable --now whisper-dictation-daemon.service"
+echo "loquacio installed. Enable the daemon with:"
+echo "  systemctl --user enable --now loquacio-daemon.service"
 EOS
 chmod 755 "$PKGROOT/DEBIAN/postinst"
 
 mkdir -p "$DIST"
 dpkg-deb --root-owner-group -Zxz \
-  --build "$PKGROOT" "$DIST/whisper-dictation_${VERSION}_amd64.deb"
-echo "✅ deb: dist/whisper-dictation_${VERSION}_amd64.deb"
+  --build "$PKGROOT" "$DIST/loquacio_${VERSION}_amd64.deb"
+echo "✅ deb: dist/loquacio_${VERSION}_amd64.deb"

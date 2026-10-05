@@ -39,6 +39,6 @@ Alternatively, generate default assets using Microsoft's tools:
 
 ## Notes
 
-- These assets are referenced in both `Package.appxmanifest` and `WhisperDictation.Package.wapproj`
+- These assets are referenced in both `Package.appxmanifest` and `Loquacio.Package.wapproj`
 - Assets must be present before building the MSIX package
 - Test the MSIX installation with placeholder icons first, then replace with final graphics

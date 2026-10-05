@@ -1,9 +1,9 @@
 #!/bin/bash
 set -uo pipefail
 
-# Docker Build & Test Script for Whisper Dictation
+# Docker Build & Test Script for Loquacio
 # ================================================
-# This script orchestrates building and testing the Whisper Dictation solution
+# This script orchestrates building and testing the Loquacio solution
 # inside a Docker container using the official .NET SDK image.
 #
 # This enables building Windows-targeting code (WPF app) from Linux thanks to
@@ -26,8 +26,8 @@ RUN_TESTS=false
 CLEAN_BUILD=false
 NO_CACHE=false
 START_SHELL=false
-DOCKER_IMAGE_NAME="whisper-dictation-build"
-DOCKER_CONTAINER_NAME="whisper-dictation-build-$$"
+DOCKER_IMAGE_NAME="loquacio-build"
+DOCKER_CONTAINER_NAME="loquacio-build-$$"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -71,7 +71,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "=== Whisper Dictation Docker Build ==="
+echo "=== Loquacio Docker Build ==="
 echo "Configuration: $CONFIGURATION"
 echo "Run tests: $RUN_TESTS"
 echo "Clean build: $CLEAN_BUILD"
@@ -147,10 +147,10 @@ if [ $BUILD_EXIT_CODE -eq 0 ]; then
     echo "✅ Docker build completed successfully"
     echo ""
     echo "Build artifacts are available in:"
-    echo "  - WhisperDictation/bin/$CONFIGURATION/net10.0-windows/"
-    echo "  - WhisperDictation.Core/bin/$CONFIGURATION/net10.0/"
+    echo "  - Loquacio/bin/$CONFIGURATION/net10.0-windows/"
+    echo "  - Loquacio.Core/bin/$CONFIGURATION/net10.0/"
     echo "  - TestConsole/bin/$CONFIGURATION/net10.0-windows/"
-    echo "  - WhisperDictation.Tests/bin/$CONFIGURATION/net10.0/"
+    echo "  - Loquacio.Tests/bin/$CONFIGURATION/net10.0/"
 else
     echo ""
     echo "❌ Docker build failed with exit code: $BUILD_EXIT_CODE"

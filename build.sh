@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build script for Whisper Dictation
+# Build script for Loquacio
 # Works natively on Linux thanks to EnableWindowsTargeting (see Directory.Build.props)
 
 CONFIGURATION="${1:-Release}"
@@ -13,7 +13,7 @@ fi
 
 cd "$(dirname "$0")"
 
-echo "=== Whisper Dictation Build ==="
+echo "=== Loquacio Build ==="
 echo "Configuration: $CONFIGURATION"
 echo "Tests: $RUN_TESTS"
 echo ""
@@ -26,21 +26,21 @@ fi
 
 # Build entire solution
 echo "Building solution..."
-dotnet build WhisperDictation.slnx -c "$CONFIGURATION"
+dotnet build Loquacio.slnx -c "$CONFIGURATION"
 echo "✅ Build succeeded"
 
 # Run tests
 if [ "$RUN_TESTS" = true ]; then
     echo ""
     echo "Running tests..."
-    dotnet test WhisperDictation.Tests/WhisperDictation.Tests.csproj \
+    dotnet test Loquacio.Tests/Loquacio.Tests.csproj \
         -c "$CONFIGURATION" --no-build --verbosity normal
     echo "✅ All tests passed"
 fi
 
 echo ""
 echo "Build summary:"
-echo "  - WhisperDictation.Core (net10.0) — cross-platform library"
-echo "  - WhisperDictation (net10.0-windows) — WPF application"
-echo "  - WhisperDictation.Tests (net10.0) — cross-platform tests"
+echo "  - Loquacio.Core (net10.0) — cross-platform library"
+echo "  - Loquacio (net10.0-windows) — WPF application"
+echo "  - Loquacio.Tests (net10.0) — cross-platform tests"
 echo "  - TestConsole (net10.0-windows) — Windows test harness"

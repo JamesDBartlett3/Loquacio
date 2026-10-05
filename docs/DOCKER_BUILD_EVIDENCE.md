@@ -7,7 +7,7 @@
 
 ### Image Build
 ```
-=== Whisper Dictation Docker Build ===
+=== Loquacio Docker Build ===
 Configuration: Release
 Run tests: true
 Clean build: false
@@ -20,21 +20,21 @@ Building Docker image...
 
 ### Container Build Output
 ```
-=== Whisper Dictation Build ===
+=== Loquacio Build ===
 Configuration: Release
 Tests: true
 
 Building solution...
   Determining projects to restore...
   All projects are up-to-date for restore.
-  WhisperDictation.Core -> /app/WhisperDictation.Core/bin/Release/net10.0/WhisperDictation.Core.dll
-  WhisperDictation.Tui -> /app/WhisperDictation.Tui/bin/Release/net10.0/whisper-dictation-tui.dll
-  WhisperDictation.Shared -> /app/WhisperDictation.Shared/bin/Release/net10.0/WhisperDictation.Shared.dll
-  WhisperDictation.Daemon -> /app/WhisperDictation.Daemon/bin/Release/net10.0/whisper-dictation-daemon.dll
-  WhisperDictation.Tests -> /app/WhisperDictation.Tests/bin/Release/net10.0/WhisperDictation.Tests.dll
-  WhisperDictation -> /app/WhisperDictation/bin/Release/net10.0-windows/WhisperDictation.dll
+  Loquacio.Core -> /app/Loquacio.Core/bin/Release/net10.0/Loquacio.Core.dll
+  Loquacio.Tui -> /app/Loquacio.Tui/bin/Release/net10.0/loquacio-tui.dll
+  Loquacio.Shared -> /app/Loquacio.Shared/bin/Release/net10.0/Loquacio.Shared.dll
+  Loquacio.Daemon -> /app/Loquacio.Daemon/bin/Release/net10.0/loquacio-daemon.dll
+  Loquacio.Tests -> /app/Loquacio.Tests/bin/Release/net10.0/Loquacio.Tests.dll
+  Loquacio -> /app/Loquacio/bin/Release/net10.0-windows/Loquacio.dll
   TestConsole -> /app/TestConsole/bin/Release/net10.0-windows/TestConsole.dll
-  WhisperDictation.Wpf.Tests -> /app/WhisperDictation.Wpf.Tests/bin/Release/net10.0-windows/WhisperDictation.Wpf.Tests.dll
+  Loquacio.Wpf.Tests -> /app/Loquacio.Wpf.Tests/bin/Release/net10.0-windows/Loquacio.Wpf.Tests.dll
 
 Build succeeded.
     0 Warning(s)
@@ -59,22 +59,22 @@ Total tests: 250
 
 All projects built successfully, including Windows-targeting projects:
 
-- **WhisperDictation.Core** (net10.0) — cross-platform library
-- **WhisperDictation** (net10.0-windows) — WPF application
-- **WhisperDictation.Tests** (net10.0) — cross-platform tests
+- **Loquacio.Core** (net10.0) — cross-platform library
+- **Loquacio** (net10.0-windows) — WPF application
+- **Loquacio.Tests** (net10.0) — cross-platform tests
 - **TestConsole** (net10.0-windows) — Windows test harness
 
 Additional projects built:
-- WhisperDictation.Tui (net10.0)
-- WhisperDictation.Shared (net10.0)
-- WhisperDictation.Daemon (net10.0)
-- WhisperDictation.Avalonia (net10.0)
-- WhisperDictation.Wpf.Tests (net10.0-windows)
+- Loquacio.Tui (net10.0)
+- Loquacio.Shared (net10.0)
+- Loquacio.Daemon (net10.0)
+- Loquacio.Avalonia (net10.0)
+- Loquacio.Wpf.Tests (net10.0-windows)
 
 ## Docker Image Details
 
 - **Base Image:** mcr.microsoft.com/dotnet/sdk:10.0
-- **Image Name:** whisper-dictation-build:latest
+- **Image Name:** loquacio-build:latest
 - **Build Time:** ~2 minutes (including image export)
 - **Container Build Time:** ~6 seconds
 - **Test Time:** ~5.7 seconds

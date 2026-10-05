@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build portable Windows ZIP for whisper-dictation (Phase D: win portable packaging).
+# Build portable Windows ZIP for loquacio (Phase D: win portable packaging).
 # Runs on Linux via dotnet cross-publish (EnableWindowsTargeting, see Directory.Build.props).
 # Usage:
 #   packaging/windows/build-portable.sh            # publish + package
@@ -26,7 +26,7 @@ RID=win-x64
 CONFIGURATION=Release
 DIST="$REPO_ROOT/dist"
 PUBLISH="$DIST/publish/$RID"
-APP=whisper-dictation
+APP=loquacio
 
 # Version info (mirrors build-appimage.sh conventions)
 BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
@@ -36,9 +36,9 @@ NUGET_VERSION="${BASE#v}+$(git rev-parse --short HEAD)"
 echo "Building Windows portable package version $VERSION..."
 
 PROJECTS=(
-  WhisperDictation.Daemon/WhisperDictation.Daemon.csproj
-  WhisperDictation.Tui/WhisperDictation.Tui.csproj
-  WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj
+  Loquacio.Daemon/Loquacio.Daemon.csproj
+  Loquacio.Tui/Loquacio.Tui.csproj
+  Loquacio.Avalonia/Loquacio.Avalonia.csproj
 )
 
 if [[ "$SKIP_PUBLISH" != true ]]; then
@@ -56,7 +56,7 @@ if [[ "$SKIP_PUBLISH" != true ]]; then
   echo "Publish complete: $PUBLISH"
 fi
 
-[[ -f "$PUBLISH/whisper-dictation-daemon.exe" ]] || { echo "ERROR: daemon exe missing from publish output" >&2; exit 1; }
+[[ -f "$PUBLISH/loquacio-daemon.exe" ]] || { echo "ERROR: daemon exe missing from publish output" >&2; exit 1; }
 
 # ---- Stage portable layout ----
 STAGE="$DIST/stage-win/$APP"
@@ -66,36 +66,36 @@ cp README.md LICENSE "$STAGE/" 2>/dev/null || true
 
 COMMIT="$(git rev-parse --short HEAD)"
 cat > "$STAGE/README.txt" <<EOF
-Whisper Dictation - Portable Windows Package ($VERSION)
+Loquacio - Portable Windows Package ($VERSION)
 =====================================================
 
 Contents
 --------
-  whisper-dictation-daemon.exe     Background daemon (audio capture + transcription)
-  whisper-dictation-tui.exe        Terminal UI controller
-  whisper-dictation-avalonia.exe   GUI controller
+  loquacio-daemon.exe     Background daemon (audio capture + transcription)
+  loquacio-tui.exe        Terminal UI controller
+  loquacio-avalonia.exe   GUI controller
   (*.dll, *.json are self-contained .NET 10 runtime files - keep them next to the exes)
 
 Quick Start
 -----------
 1. Extract this ZIP to any folder.
-2. Run whisper-dictation-daemon.exe to start the daemon, then a controller
-   (whisper-dictation-tui.exe or whisper-dictation-avalonia.exe).
+2. Run loquacio-daemon.exe to start the daemon, then a controller
+   (loquacio-tui.exe or loquacio-avalonia.exe).
 
 Run at Login (Task Scheduler hint)
 ----------------------------------
 Open an elevated Command Prompt in this folder and run:
 
-  schtasks /create /tn "WhisperDictation Daemon" /tr "%CD%\\whisper-dictation-daemon.exe" /sc onlogon /rl highest /f
+  schtasks /create /tn "Loquacio Daemon" /tr "%CD%\\loquacio-daemon.exe" /sc onlogon /rl highest /f
 
 Remove it later with:
 
-  schtasks /delete /tn "WhisperDictation Daemon" /f
+  schtasks /delete /tn "Loquacio Daemon" /f
 
 Notes
 -----
-- Settings: %APPDATA%\\WhisperDictation\\settings.json
-- Models:   %LOCALAPPDATA%\\WhisperDictation\\models
+- Settings: %APPDATA%\\Loquacio\\settings.json
+- Models:   %LOCALAPPDATA%\\Loquacio\\models
 - No installation required; no .NET runtime needed (self-contained).
 - Built from commit: $COMMIT
 EOF

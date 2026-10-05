@@ -31,17 +31,17 @@ jobs:
           SHORT_HASH="$(git rev-parse --short HEAD)"
           NUGET_VERSION="${BASE#v}+${SHORT_HASH}"
 
-          dotnet publish WhisperDictation.Daemon/WhisperDictation.Daemon.csproj \
+          dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj \
             -c Release -r osx-x64 --self-contained true \
             -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
             -o dist/publish/osx-x64
 
-          dotnet publish WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj \
+          dotnet publish Loquacio.Avalonia/Loquacio.Avalonia.csproj \
             -c Release -r osx-x64 --self-contained true \
             -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
             -o dist/publish/osx-x64
 
-          dotnet publish WhisperDictation.Tui/WhisperDictation.Tui.csproj \
+          dotnet publish Loquacio.Tui/Loquacio.Tui.csproj \
             -c Release -r osx-x64 --self-contained true \
             -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
             -o dist/publish/osx-x64
@@ -55,18 +55,18 @@ jobs:
       - name: Upload .app bundle artifact
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-dictation-macos-app
+          name: loquacio-macos-app
           path: dist/*.app
 
       - name: Create ZIP archive
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd dist
-          zip -r ../whisper-dictation-macos.zip WhisperDictation.app
+          zip -r ../loquacio-macos.zip Loquacio.app
 
       - name: Upload ZIP artifact (for release)
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-dictation-macos-zip
-          path: whisper-dictation-macos.zip
+          name: loquacio-macos-zip
+          path: loquacio-macos.zip

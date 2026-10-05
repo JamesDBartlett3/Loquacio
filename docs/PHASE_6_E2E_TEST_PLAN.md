@@ -1,8 +1,8 @@
-# Whisper Dictation - Phase 6 End-to-End Testing Plan
+# Loquacio - Phase 6 End-to-End Testing Plan
 
 ## Overview
 
-This document provides the comprehensive end-to-end testing checklist for Phase 6 (Tray Integration + MSIX Packaging) of the Whisper Dictation application.
+This document provides the comprehensive end-to-end testing checklist for Phase 6 (Tray Integration + MSIX Packaging) of the Loquacio application.
 
 **Note:** Tests must be executed on Windows 10 (version 22621+) or Windows 11. Linux cannot run this WPF application.
 
@@ -26,7 +26,7 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 **Expected Result:**
 - [ ] Tray icon appears in the notification area
 - [ ] Icon shows idle state (gray color)
-- [ ] Tooltip displays "Whisper Dictation - Idle"
+- [ ] Tooltip displays "Loquacio - Idle"
 
 ---
 
@@ -152,7 +152,7 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 4. Close application
 
 **Expected Result:**
-- [ ] Registry key created: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\WhisperDictation`
+- [ ] Registry key created: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Loquacio`
 - [ ] Registry value points to application executable
 - [ ] Application starts on next Windows login
 
@@ -209,8 +209,8 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 3. Navigate to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
 
 **Expected Result:**
-- [ ] `WhisperDictation` key exists
-- [ ] Value is `"C:\path\to\WhisperDictation.exe" --minimized`
+- [ ] `Loquacio` key exists
+- [ ] Value is `"C:\path\to\Loquacio.exe" --minimized`
 - [ ] Value type is REG_SZ
 
 ---
@@ -222,7 +222,7 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 **Steps:**
 1. Open Visual Studio on Windows
 2. Open solution file
-3. Select `WhisperDictation.Package` project
+3. Select `Loquacio.Package` project
 4. Build for x64 platform
 
 **Expected Result:**
@@ -250,7 +250,7 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 
 **Steps:**
 1. Open Start Menu
-2. Search for "Whisper Dictation"
+2. Search for "Loquacio"
 3. Click to launch
 
 **Expected Result:**
@@ -269,8 +269,8 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 3. Select "App Settings"
 
 **Expected Result:**
-- [ ] Publisher name: "WhisperDictation"
-- [ ] Display name: "Whisper Dictation"
+- [ ] Publisher name: "Loquacio"
+- [ ] Display name: "Loquacio"
 - [ ] Version: 1.0.0.0
 
 ---
@@ -279,7 +279,7 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 
 **Steps:**
 1. Open Settings > Apps > Installed Apps
-2. Find "Whisper Dictation"
+2. Find "Loquacio"
 3. Click "Uninstall"
 
 **Expected Result:**
@@ -317,7 +317,7 @@ This document provides the comprehensive end-to-end testing checklist for Phase 
 4. Check app capabilities in PowerShell
 
 ```powershell
-Get-AppxPackage -Name Innovation.WhisperDictation | Select-Object -ExpandProperty Capabilities
+Get-AppxPackage -Name Innovation.Loquacio | Select-Object -ExpandProperty Capabilities
 ```
 
 **Expected Result:**

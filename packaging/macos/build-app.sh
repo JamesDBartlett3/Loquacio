@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build macOS .app bundle for whisper-dictation (Phase D task 2).
+# Build macOS .app bundle for loquacio (Phase D task 2).
 # This script MUST be run on macOS (not Linux).
 #
 # Usage:
@@ -26,7 +26,7 @@ done
 
 DIST="$REPO_ROOT/dist"
 PUBLISH="$DIST/publish/osx-x64"
-APP_NAME="WhisperDictation"
+APP_NAME="Loquacio"
 APP_BUNDLE="$DIST/${APP_NAME}.app"
 CONTENTS="$APP_BUNDLE/Contents"
 
@@ -40,11 +40,11 @@ echo "Building macOS .app bundle version $VERSION..."
 # ---- Build the binaries ----
 if [[ "$SKIP_BUILD" != true ]]; then
   echo "Publishing binaries for osx-x64..."
-  dotnet publish WhisperDictation.Daemon/WhisperDictation.Daemon.csproj -c Release -r osx-x64 \
+  dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r osx-x64 \
     --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
-  dotnet publish WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj -c Release -r osx-x64 \
+  dotnet publish Loquacio.Avalonia/Loquacio.Avalonia.csproj -c Release -r osx-x64 \
     --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
-  dotnet publish WhisperDictation.Tui/WhisperDictation.Tui.csproj -c Release -r osx-x64 \
+  dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r osx-x64 \
     --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
 fi
 
@@ -56,17 +56,17 @@ mkdir -p "$CONTENTS/Frameworks"
 
 # ---- Copy binaries to Frameworks ----
 cp -r "$PUBLISH"/. "$CONTENTS/Frameworks/"
-chmod 755 "$CONTENTS/Frameworks/whisper-dictation-daemon"
-chmod 755 "$CONTENTS/Frameworks/whisper-dictation-tui"
-chmod 755 "$CONTENTS/Frameworks/whisper-dictation-avalonia" 2>/dev/null || true
+chmod 755 "$CONTENTS/Frameworks/loquacio-daemon"
+chmod 755 "$CONTENTS/Frameworks/loquacio-tui"
+chmod 755 "$CONTENTS/Frameworks/loquacio-avalonia" 2>/dev/null || true
 
 # ---- Create launcher script ----
-cat > "$CONTENTS/MacOS/whisper-dictation" <<'EOS'
+cat > "$CONTENTS/MacOS/loquacio" <<'EOS'
 #!/bin/bash
 cd "$(dirname "$0")/../Frameworks"
-exec ./whisper-dictation-avalonia "$@"
+exec ./loquacio-avalonia "$@"
 EOS
-chmod 755 "$CONTENTS/MacOS/whisper-dictation"
+chmod 755 "$CONTENTS/MacOS/loquacio"
 
 # ---- Create Info.plist ----
 cat > "$CONTENTS/Info.plist" <<EOF
@@ -75,17 +75,17 @@ cat > "$CONTENTS/Info.plist" <<EOF
 <plist version="1.0">
 <dict>
     <key>CFBundleDisplayName</key>
-    <string>Whisper Dictation</string>
+    <string>Loquacio</string>
     <key>CFBundleExecutable</key>
-    <string>whisper-dictation</string>
+    <string>loquacio</string>
     <key>CFBundleIconFile</key>
     <string>app-icon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.github.jamesdbartlett3.whisper-dictation</string>
+    <string>com.github.jamesdbartlett3.loquacio</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Whisper Dictation</string>
+    <string>Loquacio</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -95,9 +95,9 @@ cat > "$CONTENTS/Info.plist" <<EOF
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Whisper Dictation needs microphone access to capture voice for transcription.</string>
+    <string>Loquacio needs microphone access to capture voice for transcription.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Whisper Dictation needs Apple Events permission to inject text into other applications.</string>
+    <string>Loquacio needs Apple Events permission to inject text into other applications.</string>
     <key>LSUIElement</key>
     <false/>
 </dict>
@@ -149,25 +149,25 @@ else
 fi
 
 # ---- Create launchd agent template ----
-cat > "$CONTENTS/Resources/com.github.jamesdbartlett3.whisper-dictation.daemon.plist" <<EOF
+cat > "$CONTENTS/Resources/com.github.jamesdbartlett3.loquacio.daemon.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.github.jamesdbartlett3.whisper-dictation.daemon</string>
+    <string>com.github.jamesdbartlett3.loquacio.daemon</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$CONTENTS/Frameworks/whisper-dictation-daemon</string>
+        <string>$CONTENTS/Frameworks/loquacio-daemon</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>~/Library/Logs/WhisperDictation/daemon.log</string>
+    <string>~/Library/Logs/Loquacio/daemon.log</string>
     <key>StandardErrorPath</key>
-    <string>~/Library/Logs/WhisperDictation/daemon-error.log</string>
+    <string>~/Library/Logs/Loquacio/daemon-error.log</string>
     <key>ProcessType</key>
     <string>Interactive</string>
 </dict>

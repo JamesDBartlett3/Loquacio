@@ -2,11 +2,11 @@
 
 ## Overview
 
-This document describes the Docker-based build and test workflow for the Whisper Dictation project. This workflow enables building Windows-targeting code (including WPF applications) from Linux using Docker containers with the official .NET SDK.
+This document describes the Docker-based build and test workflow for the Loquacio project. This workflow enables building Windows-targeting code (including WPF applications) from Linux using Docker containers with the official .NET SDK.
 
 ## Why Docker?
 
-The Whisper Dictation project includes:
+The Loquacio project includes:
 - **Cross-platform components** (.NET 10.0): Core library, daemon, TUI, Avalonia UI
 - **Windows-specific components** (.NET 10.0-windows): WPF application, Windows test harness
 
@@ -112,21 +112,21 @@ This allows building Windows-targeting projects on Linux by providing Windows-sp
 After a successful build, artifacts are available in:
 
 ```
-WhisperDictation/bin/<Configuration>/net10.0-windows/
-  ├── WhisperDictation.dll          # Main WPF application
-  ├── WhisperDictation.exe          # Windows executable
+Loquacio/bin/<Configuration>/net10.0-windows/
+  ├── Loquacio.dll          # Main WPF application
+  ├── Loquacio.exe          # Windows executable
   └── [other dependencies]
 
-WhisperDictation.Core/bin/<Configuration>/net10.0/
-  ├── WhisperDictation.Core.dll     # Cross-platform core library
+Loquacio.Core/bin/<Configuration>/net10.0/
+  ├── Loquacio.Core.dll     # Cross-platform core library
   └── [other dependencies]
 
 TestConsole/bin/<Configuration>/net10.0-windows/
   ├── TestConsole.dll               # Windows test harness
   └── [other dependencies]
 
-WhisperDictation.Tests/bin/<Configuration>/net10.0/
-  ├── WhisperDictation.Tests.dll    # Cross-platform tests
+Loquacio.Tests/bin/<Configuration>/net10.0/
+  ├── Loquacio.Tests.dll    # Cross-platform tests
   └── [other dependencies]
 ```
 
@@ -137,7 +137,7 @@ WhisperDictation.Tests/bin/<Configuration>/net10.0/
 Tests are executed using `dotnet test` inside the container:
 
 ```bash
-dotnet test WhisperDictation.Tests/WhisperDictation.Tests.csproj \
+dotnet test Loquacio.Tests/Loquacio.Tests.csproj \
     -c Release --no-build --verbosity normal
 ```
 
@@ -220,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: test-results
-          path: WhisperDictation.Tests/TestResults/
+          path: Loquacio.Tests/TestResults/
 ```
 
 ### GitLab CI Example
@@ -235,7 +235,7 @@ build-and-test:
   artifacts:
     when: always
     paths:
-      - WhisperDictation.Tests/TestResults/
+      - Loquacio.Tests/TestResults/
 ```
 
 ## Performance Tips
@@ -251,7 +251,7 @@ build-and-test:
 ## Security Considerations
 
 1. **Use official base images** - `mcr.microsoft.com/dotnet/sdk:10.0` is maintained by Microsoft
-2. **Scan for vulnerabilities** - Run `docker scan whisper-dictation-build` periodically
+2. **Scan for vulnerabilities** - Run `docker scan loquacio-build` periodically
 3. **Minimize attack surface** - The Dockerfile only includes what's needed for building
 4. **Don't run as root in production** - This build container is rootless by default
 
@@ -282,7 +282,7 @@ The native build uses the same `EnableWindowsTargeting` mechanism and produces i
 When adding new projects or dependencies:
 1. Update `Directory.Build.props` if needed
 2. Ensure projects build in both Debug and Release configurations
-3. Add tests to `WhisperDictation.Tests` or `WhisperDictation.Wpf.Tests`
+3. Add tests to `Loquacio.Tests` or `Loquacio.Wpf.Tests`
 4. Verify the Docker build still works: `./docker-build.sh --test`
 
 ## Further Reading
