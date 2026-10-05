@@ -3,8 +3,9 @@ set -euo pipefail
 
 # Build self-contained Linux packages for loquacio (Phase D task 2).
 # Usage:
-#   packaging/linux/build-packages.sh                # docker publish + host packaging
-#   packaging/linux/build-packages.sh --build-only   # publish only (already inside docker / native dotnet)
+#   packaging/linux/build-packages.sh                # publish (native dotnet, or
+#                                                    # official SDK image via docker) + host packaging
+#   packaging/linux/build-packages.sh --build-only   # publish only (already inside a container / native dotnet)
 #   packaging/linux/build-packages.sh --skip-publish # package from existing dist/publish
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -41,7 +42,7 @@ if [[ "$SKIP_PUBLISH" != true ]]; then
     publish Loquacio.Tui/Loquacio.Tui.csproj
     publish Loquacio.Avalonia/Loquacio.Avalonia.csproj
   else
-    echo "No local dotnet — running publish inside docker"
+    echo "No local dotnet — running publish in the official .NET SDK image via docker"
     docker run --rm \
       -v "$REPO_ROOT:/app" -w /app \
       -e XDG_RUNTIME_DIR=/tmp/runtime \
