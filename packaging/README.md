@@ -159,10 +159,10 @@ Add-AppxPackage .\dist\Loquacio.Package_*.msix
 ```powershell
 # Extract and run
 Expand-Archive .\loquacio-*-win-x64-portable.zip -DestinationPath .
-.\Start\ Whisper\ Dictation.bat
+.Start Loquacio.bat
 
 # Install daemon as scheduled task
-.\Install\ Daemon.bat
+.Install Daemon.bat
 ```
 
 **Features:**
@@ -310,7 +310,7 @@ flatpak run com.github.jamesdbartlett3.loquacio
 ```powershell
 # Test portable
 Expand-Archive .\dist\loquacio-*-win-x64-portable.zip -DestinationPath .\test
-.\test\Start\ Whisper\ Dictation.bat
+.	estStart Loquacio.bat
 ```
 
 ### macOS (on macOS)
