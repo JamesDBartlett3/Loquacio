@@ -81,8 +81,10 @@ jobs:
           if [ "$RUNNER_OS" = "macOS" ]; then
             (cd dist && zip -rq "$GITHUB_WORKSPACE/$ZIP" Loquacio.app)
           elif [ "$RUNNER_OS" = "Windows" ]; then
-            # Git Bash has no zip; Windows' bsdtar creates zip via -a.
-            /c/Windows/System32/tar.exe -a -cf "$ZIP" -C "dist/publish/${{ matrix.rid }}" .
+            # Git Bash has no zip. bsdtar's -a streaming zip uses data
+            # descriptors, which Windows Explorer's zip handler rejects as
+            # invalid -- build with PowerShell's Compress-Archive instead.
+            powershell.exe -NoProfile -Command "Compress-Archive -Path 'dist/publish/${{ matrix.rid }}/*' -DestinationPath (Join-Path \$env:GITHUB_WORKSPACE '${ZIP}') -Force"
           else
             (cd "dist/publish/${{ matrix.rid }}" && zip -rq "$GITHUB_WORKSPACE/$ZIP" .)
           fi
