@@ -235,10 +235,13 @@ public class DictationStateMachineTests
         var fsm = new DictationStateMachine();
         var sessionId = fsm.StartSession();
 
-        fsm.TransitionTo(sessionId, DictationState.Recording, stageTimeout: TimeSpan.FromMilliseconds(100));
+        // Generous margins: the mid-transition delay must comfortably undershoot
+        // the stage timeout even on a loaded CI runner, or the timeout fires
+        // first and the final transition legitimately throws as stale.
+        fsm.TransitionTo(sessionId, DictationState.Recording, stageTimeout: TimeSpan.FromSeconds(2));
         await Task.Delay(50);
         fsm.TransitionTo(sessionId, DictationState.Transcribing); // clears Recording's timer
-        await Task.Delay(200);
+        await Task.Delay(TimeSpan.FromSeconds(2.5));
 
         Assert.Equal(DictationState.Transcribing, fsm.State);
     }
