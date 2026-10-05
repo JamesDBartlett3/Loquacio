@@ -6,7 +6,7 @@ namespace Loquacio.Daemon.Services;
 /// <summary>
 /// Cross-platform <see cref="IClipboardService"/> for the daemon.
 ///
-/// Copy: xclip / wl-copy on Linux, PowerShell Set-Clipboard on Windows.
+/// Copy: xclip / wl-copy on Linux, pbcopy on macOS, PowerShell Set-Clipboard on Windows.
 /// Type: delegates to <see cref="ITextInjectionService"/>, falling back to
 /// clipboard copy when injection is blocked (elevated window, UIPI, etc.).
 /// </summary>
@@ -41,6 +41,10 @@ public class DaemonClipboardService(
                 // PowerShell Set-Clipboard reads from stdin — no escaping issues
                 await RunAsync(
                     "powershell.exe", text, "-NoProfile -NonInteractive -Command $input | Set-Clipboard", ct);
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                await RunAsync("pbcopy", text, string.Empty, ct);
             }
             else
             {
