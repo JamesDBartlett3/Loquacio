@@ -141,8 +141,13 @@ if command -v iconutil >/dev/null 2>&1; then
   sips -z 512 512 "$ICON_SVG" --out "$ICONSET/icon_256x256@2x.png" >/dev/null 2>&1 || true
   sips -z 512 512 "$ICON_SVG" --out "$ICONSET/icon_512x512.png" >/dev/null 2>&1 || true
   sips -z 1024 1024 "$ICON_SVG" --out "$ICONSET/icon_512x512@2x.png" >/dev/null 2>&1 || true
-  iconutil -c icns "$ICONSET" -o "$CONTENTS/Resources/app-icon.icns"
-  rm -rf "$ICONSET"
+  # sips cannot always read SVG sources; a failed icon must not fail the build
+  if iconutil -c icns "$ICONSET" -o "$CONTENTS/Resources/app-icon.icns" 2>/dev/null; then
+    rm -rf "$ICONSET"
+  else
+    echo "WARNING: iconutil could not create .icns (SVG input unsupported?), using default icon"
+    rm -rf "$ICONSET"
+  fi
 else
   echo "WARNING: iconutil not found, skipping .icns generation"
   echo "The app will use a default icon"
