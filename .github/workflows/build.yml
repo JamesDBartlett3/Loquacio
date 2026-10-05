@@ -65,15 +65,17 @@ jobs:
         run: dotnet test Loquacio.Tests/Loquacio.Tests.csproj --no-restore --configuration Release
 
       - name: Create ZIP archive
+        shell: pwsh
         run: |
-          BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
-          VERSION="${BASE#v}"
-          ZIP="Loquacio-${VERSION}-${{ matrix.rid }}.zip"
-          if [ "$RUNNER_OS" = "macOS" ]; then
-            (cd dist && zip -rq "../$ZIP" Loquacio.app)
-          else
-            (cd "dist/publish/${{ matrix.rid }}" && zip -rq "$GITHUB_WORKSPACE/$ZIP" .)
-          fi
+          $base = git describe --tags --abbrev=0 2>$null
+          if (-not $base) { $base = "v0.0.0" }
+          $version = $base.TrimStart("v")
+          $zip = "Loquacio-$version-${{ matrix.rid }}.zip"
+          if ($env:RUNNER_OS -eq "macOS") {
+            Compress-Archive -Path "dist/Loquacio.app" -DestinationPath $zip -Force
+          } else {
+            Compress-Archive -Path "dist/publish/${{ matrix.rid }}/*" -DestinationPath $zip -Force
+          }
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
