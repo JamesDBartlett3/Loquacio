@@ -8,7 +8,7 @@ This directory contains packaging scripts and specifications for Loquacio across
 |---|---|---|---|
 | **Linux** | .deb, .tar.gz, .AppImage, Flatpak | ✅ Complete | `linux/` |
 | **Windows** | MSIX, Portable .zip | ✅ Portable validated 2026-10-02 (cross-built on Linux); MSIX needs a Windows host | `windows/` |
-| **macOS** | .app bundle, Homebrew cask | 🔶 Spec only | `macos/` |
+| **macOS** | .app bundle (CI-built), Homebrew cask (spec) | ✅ .app built by CI | `macos/` |
 
 ## Linux Packaging (`linux/`)
 

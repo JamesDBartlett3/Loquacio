@@ -82,34 +82,30 @@ The project is structured for cross-platform development:
 ./build.sh Release --test
 ```
 
-### MSIX Packaging
+### Building Packages
 
-The MSIX installer is built on Windows using the `Loquacio.Package.wapproj` packaging project.
+The release artifacts are produced by the scripts in [`packaging/`](packaging/README.md) — you don't need Visual Studio or any platform-specific IDE:
 
-**Prerequisites:**
-- Windows 10/11
-- .NET 10 SDK
-- Visual Studio 2022 (Community or higher) **or** Windows App SDK + Windows SDK build tools
+| Platform | Command (run from repo root) | Output |
+|----------|------------------------------|--------|
+| Linux | `./packaging/linux/build-packages.sh` | `.deb` + portable `.tar.gz` in `dist/` |
+| Linux | `./packaging/linux/build-appimage.sh` | `.AppImage` in `dist/` |
+| Windows | `pwsh packaging/windows/build-portable.ps1` | portable `.zip` in `dist/` (also cross-buildable from Linux/macOS via `packaging/windows/build-portable.sh`) |
+| macOS | `./packaging/macos/build-app.sh` (on macOS) | ad-hoc-signed `Loquacio.app` in `dist/`; CI builds this on every push to `main` |
 
-**Build from Visual Studio:**
-1. Open `Loquacio.slnx`
-2. Set configuration to `Release | x64`
-3. Right-click `Loquacio.Package` → **Package** → **Create App Packages**
-4. Choose sideload or store upload
+Each script publishes self-contained binaries (no .NET runtime required) before assembling the package. A Flatpak manifest is also available at `packaging/linux/com.github.jamesdbartlett3.loquacio.json`.
 
-**Build from command line:**
+### MSIX (optional)
+
+MSIX is a niche distribution path — mainly for Microsoft Store submission or enterprise sideloading. Build it from a Windows host with:
+
 ```powershell
 ./build-msix.ps1 -Configuration Release -Platform x64
 # To sign the output:
-./build-msix.ps1 -Sign -CertPath C:\certs\whisper.pfx -CertPassword *****
+./build-msix.ps1 -Sign -CertPath C:\certs\loquacio.pfx -CertPassword *****
 ```
 
-Output: `MSIXOutput/` or `AppPackages/` directory containing `.msix` file.
-
-**MSIX Limitations:**
-- **Auto-start:** Uses `windows.startupTask` manifest extension instead of registry. Users enable it via Settings → Startup apps (the in-app toggle won't work in MSIX mode — it silently falls back to no-op).
-- **Sandboxing:** File access limited to `AppData\Local\Packages\<package-name>\` — model files and settings stored there.
-- **Distribution:** Sideloading requires developer mode or a trusted certificate. Store distribution requires a Partner Center account.
+Prerequisites: Windows 10/11, .NET 10 SDK, and the Windows SDK packaging/signing tools (or Visual Studio 2022). MSIX-mode caveats: auto-start uses the `windows.startupTask` manifest extension (the in-app toggle silently no-ops), and file access is sandboxed to `AppData\Local\Packages\<package-name>\`.
 
 ## Quick Start
 
