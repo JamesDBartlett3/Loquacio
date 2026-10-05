@@ -304,7 +304,7 @@ public interface IOutputService
 
 ### Distribution
 - **GitHub Releases:** MSIX installer + portable ZIP
-- **License:** MIT (open source)
+- **License:** OSL 3.0 (open source)
 - **Documentation:** README.md with screenshots, troubleshooting guide
 
 ---

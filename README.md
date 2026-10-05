@@ -225,7 +225,7 @@ TestConsole/                 # Windows-only test harness
 
 ## License
 
-MIT
+OSL 3.0 (Open Software License v3.0)
 
 ## Acknowledgments
 

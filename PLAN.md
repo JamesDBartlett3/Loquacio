@@ -323,7 +323,7 @@ This plan breaks down the Loquacio implementation into 6 phases over 4 innovatio
   - Quick start guide
   - Screenshots of UI
   - Troubleshooting section
-- [ ] Add LICENSE file (MIT)
+- [x] Add LICENSE file (OSL 3.0)
 
 **Verification:** README is comprehensive and accurate.
 

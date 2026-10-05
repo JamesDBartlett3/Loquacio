@@ -29,7 +29,7 @@ The architecture is what makes it pleasant to live with: a small headless **daem
 <!-- Record a short clip: hotkey press → speak → text lands in an editor.
      Embed the video here, or drop 2–3 screenshots of the Avalonia GUI and TUI. -->
 
-🎬 Video demo: *[add before publishing]*
+<!-- 🎬 Video demo: *[add before publishing]* -->
 
 The app itself ships as self-contained desktop builds (no runtime installation needed):
 
@@ -50,7 +50,7 @@ dotnet build -c Release
 dotnet test Loquacio.Tests -c Release   # 373 tests, all platforms
 ```
 
-.NET 10, C#, MIT licensed. The test suite runs on Linux and Windows alike — including the daemon, IPC, and transcription pipeline.
+.NET 10, C#, OSL 3.0 licensed. The test suite runs on Linux and Windows alike — including the daemon, IPC, and transcription pipeline.
 
 ## How I Built It
 
