@@ -9,10 +9,9 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 - **Fully local**: transcription via Whisper.net and optional LLM post-processing via a local LLM (LM Studio / Ollama) — nothing leaves your machine
 - **Continuous Mode**: Listens continuously, processes on pause (~1.5s configurable silence threshold)
 - **Push-to-Talk Mode**: Hold a hotkey to record, release to process
-- **Keyword Activation**: Wake-word detection to toggle listening hands-free
 - **LLM Post-Processing**: Route raw transcription through a local LLM for auto-correction and punctuation
 - **Custom Vocabulary**: Add uncommon words to improve recognition accuracy
-- **Daemon architecture**: start the daemon once and attach any controller; the Avalonia GUI and TUI run on Linux and Windows
+- **Daemon architecture**: start the daemon once and attach any controller; the Avalonia GUI and TUI run on Linux, Windows, and macOS
 - **System Tray Integration**: Minimize to tray, balloon notifications, quick-toggle listening
 - **Auto-Start with Windows**: Optional launch at login
 - **User-Configurable Models**: Download and switch between Whisper model sizes
@@ -22,13 +21,12 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 | Component | Technology |
 |-----------|-----------|
 | Speech Recognition | Whisper.net 1.9.1 |
-| Daemon / TUI / GUI | .NET 10, Avalonia 11 (GUI), Spectre.Console-style TUI |
+| Daemon / TUI / GUI | .NET 10, Avalonia 11.3 (GUI), custom console TUI |
 | Windows Controller | WPF (.NET 10), MVVM via CommunityToolkit.Mvvm |
-| Audio Capture | NAudio (WASAPI) on Windows, ALSA/PulseAudio on Linux |
+| Audio Capture | WASAPI via NAudio on Windows, PipeWire on Linux |
 | IPC | Private Unix-domain socket (Linux) / named pipe (Windows) |
 | LLM Integration | OpenAI SDK (LM Studio / Ollama compatible) |
-| Keyword Detection | Energy VAD (Porcupine-ready) |
-| Testing | xUnit + NSubstitute (373 tests, cross-platform) |
+| Testing | xUnit + NSubstitute (377 cross-platform tests, plus 18 WPF-only) |
 
 ## Installation
 
@@ -44,7 +42,7 @@ Download a build from the [releases page](https://github.com/JamesDBartlett3/Loq
 
 ### Windows
 
-- **Portable zip (recommended):** extract `loquacio-*-win-x64-portable.zip` and run the included start script; `Install Daemon.bat` registers the daemon as a scheduled task.
+- **Portable zip (recommended):** extract `loquacio-*-win-x64-portable.zip` and run `Start Loquacio.bat`; `Install Daemon.bat` (run as administrator) registers the daemon as a scheduled task for auto-start.
 - **MSIX:** build locally with `./build-msix.ps1` on a Windows host (requires code signing for sideload).
 
 ### From Source
@@ -67,12 +65,15 @@ The project is structured for cross-platform development:
 | Project | Target | Builds on | Tests on |
 |---------|--------|-----------|----------|
 | `Loquacio.Core` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio.Shared` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio` | net10.0-windows (WPF) | Any platform* | Windows only |
 | `Loquacio.Avalonia` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio.Daemon` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio.Tui` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio.Tests` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio.Wpf.Tests` | net10.0-windows | Any platform* | Windows only |
 | `TestConsole` | net10.0-windows | Any platform* | Windows only |
+| `CrossPlatformTestConsole` / `SimpleCrossPlatformTestConsole` | net10.0 | Any platform | ✅ Any platform |
 
 \* WPF projects compile on Linux/macOS via `<EnableWindowsTargeting>true</EnableWindowsTargeting>` (set in `Directory.Build.props`), but the resulting binary requires the Windows Desktop Runtime to execute.
 
@@ -124,16 +125,15 @@ Output: `MSIXOutput/` or `AppPackages/` directory containing `.msix` file.
 |------|-------------|----------|
 | **Continuous** (default) | Listens always, processes on silence | Long-form dictation, hands-free |
 | **Push-to-Talk** | Hold `Ctrl+Alt+D` to record | Noisy environments, precise control |
-| **Keyword** | Say "Hey Dictate" to toggle | Hybrid hands-free with control |
 
 ## Hotkeys
 
 | Action | Default | Customizable |
 |--------|---------|-------------|
 | Toggle Listening | `Ctrl+Alt+D` | ✅ |
-| Toggle Mode | `Ctrl+Alt+M` | ❌ (planned) |
-| Stop | `Ctrl+Alt+S` | ❌ (planned) |
-| Copy Last Output | `Ctrl+Alt+V` | ❌ (planned) |
+| Toggle Mode | `Ctrl+Alt+M` | ✅ |
+| Stop | `Ctrl+Alt+S` | ✅ |
+| Copy Last Output | `Ctrl+Alt+V` | ✅ |
 
 ## LLM Post-Processing
 
@@ -154,7 +154,7 @@ Route raw Whisper output through a local LLM for:
 - **Double-click tray**: Restore window
 - **Right-click tray**: Context menu (Show, Start/Stop, Settings, Exit)
 - **Notifications**: Balloon tip on transcription completion (configurable)
-- **Tray Icons**: Custom state-aware icons (Idle=gray, Listening=blue+waves, Processing=amber+dots, Error=red+!)
+- **Tray Icons**: State-aware icons (idle, listening, processing, error)
 - **Single Instance**: Prevents multiple app instances from running simultaneously
 
 ## Project Structure
@@ -169,7 +169,9 @@ Loquacio.Core/       # Cross-platform class library (net10.0)
 │   ├── Settings*            # Settings persistence
 │   ├── Vocabulary*          # Custom dictionary
 │   ├── Background*          # Transcription orchestration
-│   └── KeywordDetection*    # Energy VAD
+│   └── ActivationManager*   # Activation mode orchestration (keyword disabled)
+
+Loquacio.Shared/     # Shared MVVM helpers (net10.0)
 
 Loquacio/            # WPF application (net10.0-windows)
 ├── Services/                # Windows-specific services
@@ -177,8 +179,7 @@ Loquacio/            # WPF application (net10.0-windows)
 │   ├── Hotkey*              # Global hotkeys (Win32)
 │   ├── Tray*                # System tray (WPF)
 │   ├── Clipboard*           # Clipboard output (Win32)
-│   ├── AutoStart*           # Registry auto-start
-│   └── ActivationManager*   # Activation mode orchestration
+│   └── AutoStart*           # Registry auto-start
 ├── ViewModels/              # MVVM view models
 ├── Views/                   # WPF user controls (tabs)
 ├── Controls/                # Custom WPF controls (VU meter)
@@ -186,13 +187,16 @@ Loquacio/            # WPF application (net10.0-windows)
 ├── App.xaml                 # Application entry point
 └── MainWindow.xaml          # Main window
 
-Loquacio.Tests/      # Unit tests (net10.0, cross-platform)
-├── Models/                  # Model tests
-├── Services/                # Service interface tests
-├── Infrastructure/          # Channel tests
-└── LLMPostProcessor*        # Filler word removal tests
+Loquacio.Daemon/     # Headless daemon (net10.0)
+└── Services/Audio/          # WASAPI (Windows), PipeWire (Linux) capture
 
-TestConsole/                 # Windows-only test harness
+Loquacio.Avalonia/   # Avalonia GUI controller (net10.0, Linux/Windows/macOS)
+Loquacio.Tui/        # Keyboard-only console controller (net10.0)
+
+Loquacio.Tests/      # Cross-platform unit tests (net10.0)
+Loquacio.Wpf.Tests/  # WPF-specific tests (net10.0-windows)
+TestConsole/         # Windows-only test harness
+CrossPlatformTestConsole/, SimpleCrossPlatformTestConsole/  # Console test harnesses
 ```
 
 ## Development Phases
@@ -203,8 +207,8 @@ TestConsole/                 # Windows-only test harness
 | 2. Whisper Integration | ✅ Complete | Whisper.net + model management |
 | 3. WPF UI | ✅ Complete | MVVM, settings, tabbed interface |
 | 4. LLM + Vocabulary | ✅ Complete | LLM post-processing + custom vocabulary |
-| 5. Hotkeys + Keyword | ✅ Complete | Global hotkeys, keyword detection, activation modes |
-| 6. Tray + Packaging | ✅ Complete | Tray integration, auto-start, single-instance; v0.1.0 ships Linux (AppImage/.deb/.tar.gz) and portable Windows (.zip). MSIX builds on a Windows host; macOS is spec-only |
+| 5. Hotkeys + Modes | ✅ Complete | Global hotkeys (all four customizable), activation modes (keyword activation is coded but disabled) |
+| 6. Tray + Packaging | ✅ Complete | Tray integration, auto-start, single-instance; v0.1.0 ships Linux (AppImage/.deb/.tar.gz) and portable Windows (.zip). MSIX builds on a Windows host; CI builds an ad-hoc-signed macOS `.app` |
 
 ## Troubleshooting
 

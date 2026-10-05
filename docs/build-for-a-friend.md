@@ -18,7 +18,6 @@ It's not a toy voice-note recorder — it's a real dictation workflow:
 
 - **Continuous mode** listens and transcribes as you speak, chunking on silence
 - **Push-to-talk** holds a hotkey for precise, on-demand capture
-- **Keyword activation** toggles listening with a spoken wake word
 - **Custom vocabulary** teaches it the names and jargon Whisper would otherwise mangle
 - **Local LLM post-processing** fixes capitalization, punctuation, "um"s, and misheard words — offline
 
@@ -47,7 +46,7 @@ The full source is on GitHub: [JamesDBartlett3/Loquacio](https://github.com/Jame
 ```bash
 git clone https://github.com/JamesDBartlett3/Loquacio.git
 dotnet build -c Release
-dotnet test Loquacio.Tests -c Release   # 373 tests, all platforms
+dotnet test Loquacio.Tests -c Release   # 377 tests, all platforms
 ```
 
 .NET 10, C#, OSL 3.0 licensed. The test suite runs on Linux and Windows alike — including the daemon, IPC, and transcription pipeline.
@@ -75,7 +74,7 @@ Because voice is the most sensitive data type most people ever produce, and the 
 
 ## My Agent Session
 
-This project was built pair-programming style with local AI agents. The agents planned phases, wrote and reviewed code through a real PR process (every change merged via review, including a dependency CVE adjudication), ran the 373-test suite, and built the release artifacts — while the human steered. Fitting, for an app about talking to your computer instead of typing at it.
+This project was built pair-programming style with local AI agents. The agents planned phases, wrote and reviewed code through a real PR process (every change merged via review, including a dependency CVE adjudication), ran the 377-test suite, and built the release artifacts — while the human steered. Fitting, for an app about talking to your computer instead of typing at it.
 
 ## Prize Categories
 
