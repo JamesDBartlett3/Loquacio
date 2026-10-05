@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,14 +61,57 @@ jobs:
           path: dist/*.app
 
       - name: Create ZIP archive
-        if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd dist
           zip -r ../loquacio-macos.zip Loquacio.app
 
       - name: Upload ZIP artifact (for release)
-        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: loquacio-macos-zip
           path: loquacio-macos.zip
+
+      - name: Publish draft release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          # Same version scheme the build uses: base version comes from the
+          # latest v* tag, so bumping the tag is what "increments" the version.
+          BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
+          VERSION="${BASE#v}"
+          ZIP="Loquacio-${VERSION}-macos.zip"
+          mv loquacio-macos.zip "$ZIP"
+
+          REPO="${{ github.repository }}"
+          # Find an existing DRAFT release for this version (ignore published
+          # releases and drafts of other versions).
+          DRAFT_ID="$(gh api "repos/$REPO/releases" --paginate \
+            --jq ".[] | select(.draft and .tag_name == \"$BASE\") | .id" | head -1 || true)"
+
+          PUBLISHED_ID="$(gh api "repos/$REPO/releases" --paginate \
+            --jq ".[] | select((.draft | not) and .tag_name == \"$BASE\") | .id" | head -1 || true)"
+
+          if [ -n "$DRAFT_ID" ]; then
+            echo "Version $VERSION unchanged — overwriting existing draft release"
+            # Replace all assets so the draft always reflects the latest build.
+            for ASSET_ID in $(gh api "repos/$REPO/releases/$DRAFT_ID/assets" --jq '.[].id'); do
+              gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID"
+            done
+            UPLOAD_URL="$(gh api "repos/$REPO/releases/$DRAFT_ID" --jq '.upload_url' | sed 's/{.*}//')"
+            curl -sf -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Content-Type: application/zip" \
+              --data-binary @"$ZIP" \
+              "$UPLOAD_URL?name=$ZIP"
+          elif [ -n "$PUBLISHED_ID" ]; then
+            echo "Version $VERSION already published as a release — skipping draft publish"
+          else
+            echo "Version $VERSION is new — creating draft release"
+            gh release create "$BASE" "$ZIP" \
+              --draft \
+              --title "Loquacio $VERSION" \
+              --generate-notes
+          fi
