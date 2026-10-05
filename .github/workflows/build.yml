@@ -1,4 +1,4 @@
-name: Build macOS Package
+name: Build Packages
 
 on:
   push:
@@ -10,9 +10,17 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
-    permissions:
-      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, rid: osx-x64 }
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: windows-latest, rid: win-x64 }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,52 +35,72 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore Loquacio.slnx
 
-      - name: Publish binaries for macOS
+      - name: Publish binaries
         run: |
           BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
           SHORT_HASH="$(git rev-parse --short HEAD)"
           NUGET_VERSION="${BASE#v}+${SHORT_HASH}"
+          RID="${{ matrix.rid }}"
 
           dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj \
-            -c Release -r osx-x64 --self-contained true \
+            -c Release -r "$RID" --self-contained true \
             -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
-            -o dist/publish/osx-x64
+            -o "dist/publish/$RID"
 
           dotnet publish Loquacio.Avalonia/Loquacio.Avalonia.csproj \
-            -c Release -r osx-x64 --self-contained true \
+            -c Release -r "$RID" --self-contained true \
             -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
-            -o dist/publish/osx-x64
+            -o "dist/publish/$RID"
 
           dotnet publish Loquacio.Tui/Loquacio.Tui.csproj \
-            -c Release -r osx-x64 --self-contained true \
+            -c Release -r "$RID" --self-contained true \
             -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
-            -o dist/publish/osx-x64
+            -o "dist/publish/$RID"
 
       - name: Build .app bundle
+        if: runner.os == 'macOS'
         run: packaging/macos/build-app.sh --skip-build
 
       - name: Run tests
         run: dotnet test Loquacio.Tests/Loquacio.Tests.csproj --no-restore --configuration Release
 
-      - name: Upload .app bundle artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: loquacio-macos-app
-          path: dist/*.app
-
       - name: Create ZIP archive
         run: |
-          cd dist
-          zip -r ../loquacio-macos.zip Loquacio.app
+          BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
+          VERSION="${BASE#v}"
+          ZIP="Loquacio-${VERSION}-${{ matrix.rid }}.zip"
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            (cd dist && zip -rq "../$ZIP" Loquacio.app)
+          else
+            (cd "dist/publish/${{ matrix.rid }}" && zip -rq "$GITHUB_WORKSPACE/$ZIP" .)
+          fi
 
-      - name: Upload ZIP artifact (for release)
+      - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
         with:
-          name: loquacio-macos-zip
-          path: loquacio-macos.zip
+          name: release-assets-${{ matrix.rid }}
+          path: Loquacio-*.zip
+
+  release:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-assets-*
+          merge-multiple: true
+          path: assets
 
       - name: Publish draft release
-        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -82,8 +110,6 @@ jobs:
           # latest v* tag, so bumping the tag is what "increments" the version.
           BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
           VERSION="${BASE#v}"
-          ZIP="Loquacio-${VERSION}-macos.zip"
-          mv loquacio-macos.zip "$ZIP"
 
           REPO="${{ github.repository }}"
           # Find an existing DRAFT release for this version (ignore published
@@ -101,16 +127,19 @@ jobs:
               gh api -X DELETE "repos/$REPO/releases/assets/$ASSET_ID"
             done
             UPLOAD_URL="$(gh api "repos/$REPO/releases/$DRAFT_ID" --jq '.upload_url' | sed 's/{.*}//')"
-            curl -sf -X POST \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Content-Type: application/zip" \
-              --data-binary @"$ZIP" \
-              "$UPLOAD_URL?name=$ZIP"
+            for ZIP in assets/*.zip; do
+              NAME="$(basename "$ZIP")"
+              curl -sf -X POST \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Content-Type: application/zip" \
+                --data-binary @"$ZIP" \
+                "$UPLOAD_URL?name=$NAME"
+            done
           elif [ -n "$PUBLISHED_ID" ]; then
             echo "Version $VERSION already published as a release — skipping draft publish"
           else
             echo "Version $VERSION is new — creating draft release"
-            gh release create "$BASE" "$ZIP" \
+            gh release create "$BASE" assets/*.zip \
               --draft \
               --title "Loquacio $VERSION" \
               --generate-notes
