@@ -64,27 +64,22 @@ jobs:
       - name: Run tests
         run: dotnet test Loquacio.Tests/Loquacio.Tests.csproj --no-restore --configuration Release
 
-      - name: Create ZIP archive (macOS/Linux)
-        if: runner.os != 'Windows'
+      - name: Compute version
         run: |
           BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
-          VERSION="${BASE#v}"
+          echo "VERSION=${BASE#v}" >> "$GITHUB_ENV"
+
+      - name: Create ZIP archive
+        run: |
           ZIP="Loquacio-${VERSION}-${{ matrix.rid }}.zip"
           if [ "$RUNNER_OS" = "macOS" ]; then
-            (cd dist && zip -rq "../$ZIP" Loquacio.app)
+            (cd dist && zip -rq "$GITHUB_WORKSPACE/$ZIP" Loquacio.app)
+          elif [ "$RUNNER_OS" = "Windows" ]; then
+            # Git Bash has no zip; Windows' bsdtar creates zip via -a.
+            /c/Windows/System32/tar.exe -a -cf "$ZIP" -C "dist/publish/${{ matrix.rid }}" .
           else
             (cd "dist/publish/${{ matrix.rid }}" && zip -rq "$GITHUB_WORKSPACE/$ZIP" .)
           fi
-
-      - name: Create ZIP archive (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $base = git describe --tags --abbrev=0 2>$null
-          if (-not $base) { $base = "v0.0.0" }
-          $version = $base.TrimStart("v")
-          Compress-Archive -Path "dist/publish/${{ matrix.rid }}/*" `
-            -DestinationPath "Loquacio-$version-${{ matrix.rid }}.zip" -Force
 
       - name: Upload ZIP artifact
         uses: actions/upload-artifact@v4
