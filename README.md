@@ -1,5 +1,7 @@
 # Loquacio
 
+![Loquacio — local, private voice-to-text dictation](Assets/hero-banner.png)
+
 Local Whisper-powered voice-to-text dictation that runs entirely on your machine — no cloud, no telemetry. A headless daemon owns audio capture and transcription; controllers (Avalonia GUI, TUI, and a Windows WPF app) connect to it over a private IPC socket.
 
 ## Features
@@ -11,13 +13,6 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 - **LLM Post-Processing**: Route raw transcription through a local LLM for auto-correction and punctuation
 - **Custom Vocabulary**: Add uncommon words to improve recognition accuracy
 - **Daemon architecture**: start the daemon once and attach any controller; the Avalonia GUI and TUI run on Linux and Windows
-- **User-Configurable Models**: Download and switch between Whisper model sizes
-
-- **Continuous Mode**: Listens continuously, processes on pause (~1.5s configurable silence threshold)
-- **Push-to-Talk Mode**: Hold a hotkey to record, release to process
-- **Keyword Activation**: Wake-word detection to toggle listening hands-free
-- **LLM Post-Processing**: Route raw transcription through a local LLM (LM Studio / Ollama) for auto-correction and punctuation
-- **Custom Vocabulary**: Add uncommon words to improve recognition accuracy
 - **System Tray Integration**: Minimize to tray, balloon notifications, quick-toggle listening
 - **Auto-Start with Windows**: Optional launch at login
 - **User-Configurable Models**: Download and switch between Whisper model sizes
