@@ -1,0 +1,240 @@
+# Whisper Dictation
+
+Local Whisper-powered voice-to-text dictation that runs entirely on your machine — no cloud, no telemetry. A headless daemon owns audio capture and transcription; controllers (Avalonia GUI, TUI, and a Windows WPF app) connect to it over a private IPC socket.
+
+## Features
+
+- **Fully local**: transcription via Whisper.net and optional LLM post-processing via a local LLM (LM Studio / Ollama) — nothing leaves your machine
+- **Continuous Mode**: Listens continuously, processes on pause (~1.5s configurable silence threshold)
+- **Push-to-Talk Mode**: Hold a hotkey to record, release to process
+- **Keyword Activation**: Wake-word detection to toggle listening hands-free
+- **LLM Post-Processing**: Route raw transcription through a local LLM for auto-correction and punctuation
+- **Custom Vocabulary**: Add uncommon words to improve recognition accuracy
+- **Daemon architecture**: start the daemon once and attach any controller; the Avalonia GUI and TUI run on Linux and Windows
+- **User-Configurable Models**: Download and switch between Whisper model sizes
+
+- **Continuous Mode**: Listens continuously, processes on pause (~1.5s configurable silence threshold)
+- **Push-to-Talk Mode**: Hold a hotkey to record, release to process
+- **Keyword Activation**: Wake-word detection to toggle listening hands-free
+- **LLM Post-Processing**: Route raw transcription through a local LLM (LM Studio / Ollama) for auto-correction and punctuation
+- **Custom Vocabulary**: Add uncommon words to improve recognition accuracy
+- **System Tray Integration**: Minimize to tray, balloon notifications, quick-toggle listening
+- **Auto-Start with Windows**: Optional launch at login
+- **User-Configurable Models**: Download and switch between Whisper model sizes
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Speech Recognition | Whisper.net 1.9.1 |
+| Daemon / TUI / GUI | .NET 10, Avalonia 11 (GUI), Spectre.Console-style TUI |
+| Windows Controller | WPF (.NET 10), MVVM via CommunityToolkit.Mvvm |
+| Audio Capture | NAudio (WASAPI) on Windows, ALSA/PulseAudio on Linux |
+| IPC | Private Unix-domain socket (Linux) / named pipe (Windows) |
+| LLM Integration | OpenAI SDK (LM Studio / Ollama compatible) |
+| Keyword Detection | Energy VAD (Porcupine-ready) |
+| Testing | xUnit + NSubstitute (373 tests, cross-platform) |
+
+## Installation
+
+Download a build from the [releases page](http://elitedesk.local:3001/Innovation/whisper-dictation/releases) — all artifacts are self-contained (no .NET runtime required) and include the daemon plus all controllers.
+
+### Linux
+
+| Format | Install |
+|--------|---------|
+| AppImage | `chmod +x whisper-dictation-*-x86_64.AppImage && ./whisper-dictation-*-x86_64.AppImage` |
+| .deb | `sudo dpkg -i whisper-dictation_*_amd64.deb` then `systemctl --user enable --now whisper-dictation-daemon.service` |
+| .tar.gz | `tar -xzf whisper-dictation-*-linux-x64.tar.gz` and run the binaries in place |
+
+### Windows
+
+- **Portable zip (recommended):** extract `whisper-dictation-*-win-x64-portable.zip` and run the included start script; `Install Daemon.bat` registers the daemon as a scheduled task.
+- **MSIX:** build locally with `./build-msix.ps1` on a Windows host (requires code signing for sideload).
+
+### From Source
+
+```bash
+git clone ssh://git@elitedesk.local:2222/Innovation/whisper-dictation.git
+cd whisper-dictation
+
+# Build on any platform (Windows, Linux, macOS)
+dotnet build -c Release
+
+# Run tests (works on Linux!)
+dotnet test WhisperDictation.Tests -c Release
+```
+
+### Cross-Platform Development
+
+The project is structured for cross-platform development:
+
+| Project | Target | Builds on | Tests on |
+|---------|--------|-----------|----------|
+| `WhisperDictation.Core` | net10.0 | Any platform | ✅ Any platform |
+| `WhisperDictation` | net10.0-windows (WPF) | Any platform* | Windows only |
+| `WhisperDictation.Avalonia` | net10.0 | Any platform | ✅ Any platform |
+| `WhisperDictation.Daemon` | net10.0 | Any platform | ✅ Any platform |
+| `WhisperDictation.Tui` | net10.0 | Any platform | ✅ Any platform |
+| `WhisperDictation.Tests` | net10.0 | Any platform | ✅ Any platform |
+| `TestConsole` | net10.0-windows | Any platform* | Windows only |
+
+\* WPF projects compile on Linux/macOS via `<EnableWindowsTargeting>true</EnableWindowsTargeting>` (set in `Directory.Build.props`), but the resulting binary requires the Windows Desktop Runtime to execute.
+
+```bash
+# Quick build + test on Linux
+./build.sh Release --test
+```
+
+### MSIX Packaging
+
+The MSIX installer is built on Windows using the `WhisperDictation.Package.wapproj` packaging project.
+
+**Prerequisites:**
+- Windows 10/11
+- .NET 10 SDK
+- Visual Studio 2022 (Community or higher) **or** Windows App SDK + Windows SDK build tools
+
+**Build from Visual Studio:**
+1. Open `WhisperDictation.slnx`
+2. Set configuration to `Release | x64`
+3. Right-click `WhisperDictation.Package` → **Package** → **Create App Packages**
+4. Choose sideload or store upload
+
+**Build from command line:**
+```powershell
+./build-msix.ps1 -Configuration Release -Platform x64
+# To sign the output:
+./build-msix.ps1 -Sign -CertPath C:\certs\whisper.pfx -CertPassword *****
+```
+
+Output: `MSIXOutput/` or `AppPackages/` directory containing `.msix` file.
+
+**MSIX Limitations:**
+- **Auto-start:** Uses `windows.startupTask` manifest extension instead of registry. Users enable it via Settings → Startup apps (the in-app toggle won't work in MSIX mode — it silently falls back to no-op).
+- **Sandboxing:** File access limited to `AppData\Local\Packages\<package-name>\` — model files and settings stored there.
+- **Distribution:** Sideloading requires developer mode or a trusted certificate. Store distribution requires a Partner Center account.
+
+## Quick Start
+
+1. **Launch** the app
+2. Go to the **Whisper** tab and download a model (start with `base` for quick testing)
+3. Go to the **Audio** tab and select your microphone
+4. Click **Start** (or press `Ctrl+Alt+D`)
+5. Speak — your words appear in the transcription box and are copied to your clipboard
+
+## Activation Modes
+
+| Mode | How It Works | Best For |
+|------|-------------|----------|
+| **Continuous** (default) | Listens always, processes on silence | Long-form dictation, hands-free |
+| **Push-to-Talk** | Hold `Ctrl+Alt+D` to record | Noisy environments, precise control |
+| **Keyword** | Say "Hey Dictate" to toggle | Hybrid hands-free with control |
+
+## Hotkeys
+
+| Action | Default | Customizable |
+|--------|---------|-------------|
+| Toggle Listening | `Ctrl+Alt+D` | ✅ |
+| Toggle Mode | `Ctrl+Alt+M` | ❌ (planned) |
+| Stop | `Ctrl+Alt+S` | ❌ (planned) |
+| Copy Last Output | `Ctrl+Alt+V` | ❌ (planned) |
+
+## LLM Post-Processing
+
+Route raw Whisper output through a local LLM for:
+- Auto-punctuation and capitalization
+- Filler word removal ("um", "uh", "ehm")
+- Misheard word correction
+- Custom vocabulary enforcement
+
+**Supported Providers:**
+- **LM Studio** (`http://localhost:1234/v1`) — default
+- **Ollama** (`http://localhost:11434/v1`)
+
+## System Tray
+
+- **Minimize to tray**: Window hides, tray icon remains
+- **Close to tray**: Closing the window hides it instead of exiting (configurable)
+- **Double-click tray**: Restore window
+- **Right-click tray**: Context menu (Show, Start/Stop, Settings, Exit)
+- **Notifications**: Balloon tip on transcription completion (configurable)
+- **Tray Icons**: Custom state-aware icons (Idle=gray, Listening=blue+waves, Processing=amber+dots, Error=red+!)
+- **Single Instance**: Prevents multiple app instances from running simultaneously
+
+## Project Structure
+
+```
+WhisperDictation.Core/       # Cross-platform class library (net10.0)
+├── Models/                  # Data models (Settings, AudioSegment, etc.)
+├── Infrastructure/          # Channels, cross-cutting concerns
+├── Services/                # Cross-platform services + interfaces
+│   ├── Whisper*             # Whisper.net processing
+│   ├── LLM*                 # LLM post-processing, filler removal
+│   ├── Settings*            # Settings persistence
+│   ├── Vocabulary*          # Custom dictionary
+│   ├── Background*          # Transcription orchestration
+│   └── KeywordDetection*    # Energy VAD
+
+WhisperDictation/            # WPF application (net10.0-windows)
+├── Services/                # Windows-specific services
+│   ├── AudioCapture*        # WASAPI audio capture (NAudio)
+│   ├── Hotkey*              # Global hotkeys (Win32)
+│   ├── Tray*                # System tray (WPF)
+│   ├── Clipboard*           # Clipboard output (Win32)
+│   ├── AutoStart*           # Registry auto-start
+│   └── ActivationManager*   # Activation mode orchestration
+├── ViewModels/              # MVVM view models
+├── Views/                   # WPF user controls (tabs)
+├── Controls/                # Custom WPF controls (VU meter)
+├── Converters/              # WPF value converters
+├── App.xaml                 # Application entry point
+└── MainWindow.xaml          # Main window
+
+WhisperDictation.Tests/      # Unit tests (net10.0, cross-platform)
+├── Models/                  # Model tests
+├── Services/                # Service interface tests
+├── Infrastructure/          # Channel tests
+└── LLMPostProcessor*        # Filler word removal tests
+
+TestConsole/                 # Windows-only test harness
+```
+
+## Development Phases
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1. Foundation | ✅ Complete | Project skeleton + audio capture pipeline |
+| 2. Whisper Integration | ✅ Complete | Whisper.net + model management |
+| 3. WPF UI | ✅ Complete | MVVM, settings, tabbed interface |
+| 4. LLM + Vocabulary | ✅ Complete | LLM post-processing + custom vocabulary |
+| 5. Hotkeys + Keyword | ✅ Complete | Global hotkeys, keyword detection, activation modes |
+| 6. Tray + Packaging | ✅ Complete | Tray integration, auto-start, single-instance; v0.1.0 ships Linux (AppImage/.deb/.tar.gz) and portable Windows (.zip). MSIX builds on a Windows host; macOS is spec-only |
+
+## Troubleshooting
+
+### "No audio devices found"
+- Ensure your microphone is connected and not in use by another application
+- Check Windows privacy settings: **Settings → Privacy → Microphone → Allow apps to access your microphone**
+
+### Poor transcription quality
+- Try a larger model (small → medium → large-v3)
+- Enable LLM post-processing for auto-correction
+- Add domain-specific words to the custom vocabulary
+- Speak clearly and minimize background noise
+
+### High CPU usage
+- Use a smaller model (tiny → base → small)
+- Ensure you're not running other GPU-intensive applications
+- Consider enabling LLM post-processing only for important dictation
+
+## License
+
+MIT
+
+## Acknowledgments
+
+- [Whisper.net](https://github.com/sandrohanea/whisper.net) — .NET bindings for OpenAI's Whisper
+- [NAudio](https://github.com/naudio/NAudio) — .NET audio library
+- [Hardcodet.NotifyIcon.Wpf](https://github.com/hardcodet/wpf-notifyicon) — WPF tray icon library
+- [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) — MVVM framework

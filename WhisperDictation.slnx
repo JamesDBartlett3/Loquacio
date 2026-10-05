@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="WhisperDictation.Core/WhisperDictation.Core.csproj" />
+  <Project Path="CrossPlatformTestConsole/CrossPlatformTestConsole.csproj" />
+  <Project Path="TestConsole/TestConsole.csproj" />
+  <Project Path="WhisperDictation.Daemon/WhisperDictation.Daemon.csproj" />
+  <Project Path="WhisperDictation.Shared/WhisperDictation.Shared.csproj" />
+  <Project Path="WhisperDictation.Tests/WhisperDictation.Tests.csproj" />
+  <Project Path="WhisperDictation.Tui/WhisperDictation.Tui.csproj" />
+  <Project Path="WhisperDictation/WhisperDictation.csproj" />
+  <Project Path="WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj" />
+  <Project Path="WhisperDictation.Wpf.Tests/WhisperDictation.Wpf.Tests.csproj" />
+</Solution>

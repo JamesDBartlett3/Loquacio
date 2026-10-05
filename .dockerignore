@@ -1,0 +1,64 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# Test results
+**/TestResults/
+**/*.trx
+
+# NuGet packages
+**/*.nupkg
+**/.nuget/
+
+# Visual Studio
+**/.vs/
+**/*.suo
+**/*.user
+**/*.userosscache
+**/*.sln.docstates
+
+# Rider
+**/.idea/
+
+# VS Code
+**/.vscode/
+
+# macOS
+**/.DS_Store
+
+# Linux
+**/*~
+**/.directory
+
+# Temporary files
+**/*.tmp
+**/*.log
+**/*.cache
+
+# Node modules (if any)
+**/node_modules/
+
+# Docker
+**/Dockerfile
+**/.dockerignore
+**/docker-compose.yml
+
+# Git
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# Documentation (not needed for build)
+**/docs/
+**/*.md
+!README.md
+
+# Scripts (not needed inside container)
+**/scripts/
+**/*.sh
+!build.sh
+
+# Other
+**/.editorconfig
+**/.gitignore

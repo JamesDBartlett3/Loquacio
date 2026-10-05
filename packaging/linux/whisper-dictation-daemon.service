@@ -1,0 +1,15 @@
+[Unit]
+Description=Whisper Dictation Daemon (local voice-to-text)
+Documentation=https://elitedesk.local:3001/Innovation/whisper-dictation
+After=pipewire.service pipewire.socket
+Wants=pipewire.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/whisper-dictation/whisper-dictation-daemon
+Restart=on-failure
+RestartSec=3
+Environment=DOTNET_GCHeapHardLimit=1C0000000
+
+[Install]
+WantedBy=default.target

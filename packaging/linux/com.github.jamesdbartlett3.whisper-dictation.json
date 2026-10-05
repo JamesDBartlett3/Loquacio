@@ -1,0 +1,102 @@
+{
+  "app-id": "com.github.jamesdbartlett3.whisper-dictation",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "24.08",
+  "sdk": "org.freedesktop.Sdk",
+  "base": "org.freedesktop.Platform.Dotnet",
+  "base-version": "8.0",
+  "command": "whisper-dictation-avalonia",
+  "finish-args": [
+    "--share=ipc",
+    "--socket=x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--share=network",
+    "--socket=pulseaudio",
+    "--filesystem=home:ro",
+    "--talk-name=org.freedesktop.Notifications",
+    "--talk-name=org.a11y.Bus",
+    "--system-talk-name=org.freedesktop.login1"
+  ],
+  "build-options": {
+    "env": {
+      "DOTNET_CLI_TELEMETRY_OPTOUT": "true"
+    }
+  },
+  "cleanup": [
+    "/include",
+    "/lib/pkgconfig",
+    "/share/man",
+    "*.a",
+    "*.la"
+  ],
+  "modules": [
+    {
+      "name": "whisper-dictation",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/lib/whisper-dictation",
+        "mkdir -p /app/bin",
+        "mkdir -p /app/share/applications",
+        "mkdir -p /app/share/icons/hicolor/256x256/apps",
+        "mkdir -p /app/share/doc/whisper-dictation",
+
+        "cp -r WhisperDictation.Daemon/bin/Release/net10.0/linux-x64/publish/* /app/lib/whisper-dictation/",
+        "cp -r WhisperDictation.Tui/bin/Release/net10.0/linux-x64/publish/* /app/lib/whisper-dictation/",
+        "cp -r WhisperDictation.Avalonia/bin/Release/net10.0/linux-x64/publish/* /app/lib/whisper-dictation/",
+
+        "chmod 755 /app/lib/whisper-dictation/whisper-dictation-daemon",
+        "chmod 755 /app/lib/whisper-dictation/whisper-dictation-tui",
+        "chmod 755 /app/lib/whisper-dictation/whisper-dictation-avalonia",
+
+        "cat > /app/bin/whisper-dictation-daemon << 'EOF'\n#!/bin/sh\ncd /app/lib/whisper-dictation\nexec ./whisper-dictation-daemon \"$@\"\nEOF",
+        "cat > /app/bin/whisper-dictation-tui << 'EOF'\n#!/bin/sh\ncd /app/lib/whisper-dictation\nexec ./whisper-dictation-tui \"$@\"\nEOF",
+        "cat > /app/bin/whisper-dictation-avalonia << 'EOF'\n#!/bin/sh\ncd /app/lib/whisper-dictation\nexec ./whisper-dictation-avalonia \"$@\"\nEOF",
+
+        "chmod 755 /app/bin/whisper-dictation-daemon",
+        "chmod 755 /app/bin/whisper-dictation-tui",
+        "chmod 755 /app/bin/whisper-dictation-avalonia",
+
+        "cp README.md LICENSE /app/share/doc/whisper-dictation/ 2>/dev/null || true"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": ".",
+          "skip": [
+            ".git",
+            "dist",
+            "bin",
+            "obj",
+            "packaging/linux/dist",
+            "*.user",
+            "*.suo"
+          ]
+        }
+      ],
+      "post-install": [
+        "dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false WhisperDictation.Daemon/WhisperDictation.Daemon.csproj",
+        "dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false WhisperDictation.Tui/WhisperDictation.Tui.csproj",
+        "dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj"
+      ]
+    },
+    {
+      "name": "desktop-file",
+      "buildsystem": "simple",
+      "build-commands": [
+        "install -Dm644 com.github.jamesdbartlett3.whisper-dictation.desktop /app/share/applications/com.github.jamesdbartlett3.whisper-dictation.desktop",
+        "install -Dm644 com.github.jamesdbartlett3.whisper-dictation.svg /app/share/icons/hicolor/256x256/apps/com.github.jamesdbartlett3.whisper-dictation.svg"
+      ],
+      "sources": [
+        {
+          "type": "file",
+          "path": "packaging/linux/flatpak/com.github.jamesdbartlett3.whisper-dictation.desktop"
+        },
+        {
+          "type": "file",
+          "path": "packaging/linux/flatpak/com.github.jamesdbartlett3.whisper-dictation.svg"
+        }
+      ]
+    }
+  ]
+}

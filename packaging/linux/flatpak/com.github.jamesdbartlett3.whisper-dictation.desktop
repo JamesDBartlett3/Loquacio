@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Whisper Dictation
+Comment=Local Whisper-powered voice-to-text dictation
+Exec=whisper-dictation-avalonia
+Icon=com.github.jamesdbartlett3.whisper-dictation
+Type=Application
+Categories=Audio;AudioVideo;Utility;
+Terminal=false
+StartupNotify=true
+Keywords=voice;dictation;speech;transcription;whisper;
+X-Purism-FormFactor=Workstation;Mobile;

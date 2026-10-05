@@ -1,0 +1,59 @@
+<UserControl x:Class="WhisperDictation.Views.LLMTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Padding="12">
+    <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+        <Grid Margin="0,0,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Label Content="LLM Post-Processing" FontWeight="SemiBold"/>
+            <Control Grid.Column="1" Style="{StaticResource InfoIconStyle}" Margin="6,0,0,0"
+                     Tag="When enabled, raw Whisper output is sent to a local LLM (LM Studio or Ollama) for punctuation, filler word removal, and custom vocabulary correction. Falls back to raw output if unavailable."/>
+        </Grid>
+        <CheckBox Content="Enable LLM post-processing" IsChecked="{Binding IsLlmEnabled}"
+              Margin="0,0,0,12"/>
+
+        <StackPanel IsEnabled="{Binding IsLlmEnabled}">
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <Label Content="Provider" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ComboBox ItemsSource="{Binding Providers}"
+                          SelectedItem="{Binding Provider}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2">
+                <Label Content="Endpoint" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox Text="{Binding Endpoint, UpdateSourceTrigger=LostFocus}"/>
+            </StackPanel>
+        </Grid>
+
+        <Label Content="Select local LLM" FontWeight="SemiBold" Margin="0,0,0,4"/>
+        <ComboBox ItemsSource="{Binding AvailableModels}"
+                  SelectedItem="{Binding SelectedModel}"
+                  DisplayMemberPath="Id"
+                  Margin="0,0,0,12">
+            <ComboBox.ItemContainerStyle>
+                <Style TargetType="ComboBoxItem">
+                    <Setter Property="ToolTip" Value="{Binding Summary}"/>
+                    <Setter Property="ToolTipService.InitialShowDelay" Value="100"/>
+                </Style>
+            </ComboBox.ItemContainerStyle>
+        </ComboBox>
+
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+            <Button Content="Test Connection" Command="{Binding TestConnectionCommand}"
+                    Padding="12,4" Margin="0,0,8,0"
+                    IsEnabled="{Binding IsTestingConnection, Converter={StaticResource InvertBool}}"/>
+            <TextBlock Text="{Binding ConnectionStatus}" VerticalAlignment="Center"/>
+        </StackPanel>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

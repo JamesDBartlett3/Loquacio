@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Enable building Windows-targeting projects on Linux -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+</Project>

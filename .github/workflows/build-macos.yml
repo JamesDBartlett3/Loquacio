@@ -1,0 +1,72 @@
+name: Build macOS Package
+
+on:
+  push:
+    branches: [main, dev]
+    tags: ['v*']
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Publish binaries for macOS
+        run: |
+          BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
+          SHORT_HASH="$(git rev-parse --short HEAD)"
+          NUGET_VERSION="${BASE#v}+${SHORT_HASH}"
+
+          dotnet publish WhisperDictation.Daemon/WhisperDictation.Daemon.csproj \
+            -c Release -r osx-x64 --self-contained true \
+            -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
+            -o dist/publish/osx-x64
+
+          dotnet publish WhisperDictation.Avalonia/WhisperDictation.Avalonia.csproj \
+            -c Release -r osx-x64 --self-contained true \
+            -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
+            -o dist/publish/osx-x64
+
+          dotnet publish WhisperDictation.Tui/WhisperDictation.Tui.csproj \
+            -c Release -r osx-x64 --self-contained true \
+            -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
+            -o dist/publish/osx-x64
+
+      - name: Build .app bundle
+        run: packaging/macos/build-app.sh --skip-build
+
+      - name: Run tests
+        run: dotnet test --no-build --configuration Release
+
+      - name: Upload .app bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-dictation-macos-app
+          path: dist/*.app
+
+      - name: Create ZIP archive
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd dist
+          zip -r ../whisper-dictation-macos.zip WhisperDictation.app
+
+      - name: Upload ZIP artifact (for release)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-dictation-macos-zip
+          path: whisper-dictation-macos.zip

@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WhisperDictation.Avalonia.Views.AudioTabView">
+    <StackPanel Spacing="16" MaxWidth="500">
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Audio Device" FontWeight="SemiBold" FontSize="13" />
+            <TextBox Text="{Binding SelectedDeviceId}" Watermark="Device ID" IsReadOnly="True" />
+        </StackPanel>
+
+        <Separator />
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Input Gain" FontWeight="SemiBold" FontSize="13" />
+            <Slider Minimum="0" Maximum="3" Value="{Binding Gain}"
+                    TickFrequency="0.1" IsSnapToTickEnabled="True" />
+            <TextBlock Text="{Binding Gain, StringFormat='{}{0:F1}x'}" Foreground="#a6adc8" FontSize="11" />
+        </StackPanel>
+
+        <Separator />
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Silence Threshold" FontWeight="SemiBold" FontSize="13" />
+            <Slider Minimum="500" Maximum="5000" Value="{Binding SilenceThresholdMs}"
+                    TickFrequency="100" IsSnapToTickEnabled="True" />
+            <TextBlock Text="{Binding SilenceThresholdMs, StringFormat='{}{0:F0} ms'}" Foreground="#a6adc8" FontSize="11" />
+            <TextBlock Text="Time of silence before a segment is processed."
+                       FontSize="11" Foreground="#6c7086" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Separator />
+
+        <StackPanel Spacing="6">
+            <TextBlock Text="Live Audio Level" FontWeight="SemiBold" FontSize="13" />
+            <ProgressBar Value="{Binding CurrentLevel}" Maximum="1" Height="20" />
+        </StackPanel>
+
+    </StackPanel>
+</UserControl>
