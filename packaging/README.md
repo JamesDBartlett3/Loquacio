@@ -105,14 +105,14 @@ flatpak run com.github.jamesdbartlett3.loquacio
 - Works across all Linux distributions
 - Centralized updates via Flatpak
 
-## Windows Validation (2026-10-02, elitedesk)
+## Windows Validation (2026-10-02)
 
 `build-portable.ps1` was executed on Linux (PowerShell 7.6.5, dotnet SDK 10.0.112) as a cross-publish validation:
 
 - `dotnet publish -r win-x64 --self-contained` succeeded for Daemon, WPF app, and TUI (0 errors)
 - Artifact: `dist/loquacio-0.0.0.gitf17e126-win-x64-portable.zip` (86,067,634 bytes, 571 files)
 - Contains loquacio-daemon.exe, loquacio-tui.exe, Loquacio.exe (all PE32+ / MZ magic verified), plus Start/Install/Uninstall .bat helpers
-- NOT executed (no Windows on this host): runtime behavior, Task Scheduler scripts, and MSIX packaging (build-msix.ps1 requires makeappx on Windows). Runtime verification on a Windows 11 host is the remaining follow-up (see Kanboard #38).
+- NOT executed (no Windows on this host): runtime behavior, Task Scheduler scripts, and MSIX packaging (build-msix.ps1 requires makeappx on Windows). Runtime verification on a Windows 11 host is the remaining follow-up.
 
 ## Windows Packaging (`windows/`)
 

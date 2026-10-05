@@ -32,7 +32,7 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 
 ## Installation
 
-Download a build from the [releases page](http://elitedesk.local:3001/Innovation/loquacio/releases) — all artifacts are self-contained (no .NET runtime required) and include the daemon plus all controllers.
+Download a build from the [releases page](https://github.com/JamesDBartlett3/Loquacio/releases) — all artifacts are self-contained (no .NET runtime required) and include the daemon plus all controllers.
 
 ### Linux
 
@@ -50,7 +50,7 @@ Download a build from the [releases page](http://elitedesk.local:3001/Innovation
 ### From Source
 
 ```bash
-git clone ssh://git@elitedesk.local:2222/Innovation/loquacio.git
+git clone https://github.com/JamesDBartlett3/Loquacio.git
 cd loquacio
 
 # Build on any platform (Windows, Linux, macOS)

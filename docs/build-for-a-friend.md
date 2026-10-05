@@ -38,14 +38,14 @@ The app itself ships as self-contained desktop builds (no runtime installation n
 | Linux | `.AppImage`, `.deb` (with a systemd user service), portable `.tar.gz` |
 | Windows 10/11 | portable `.zip` with daemon auto-start script; MSIX buildable on a Windows host |
 
-Releases: [v0.1.0 on Forgejo](http://elitedesk.local:3001/Innovation/loquacio/releases/tag/v0.1.0)
+Releases: [v0.1.0 on GitHub](https://github.com/JamesDBartlett3/Loquacio/releases)
 
 ## Code
 
-The full source is on my self-hosted Forgejo instance: [Innovation/loquacio](http://elitedesk.local:3001/Innovation/loquacio) (private, but I'm happy to share access — ask).
+The full source is on GitHub: [JamesDBartlett3/Loquacio](https://github.com/JamesDBartlett3/Loquacio)
 
 ```bash
-git clone ssh://git@elitedesk.local:2222/Innovation/loquacio.git
+git clone https://github.com/JamesDBartlett3/Loquacio.git
 dotnet build -c Release
 dotnet test Loquacio.Tests -c Release   # 373 tests, all platforms
 ```
@@ -75,7 +75,7 @@ Because voice is the most sensitive data type most people ever produce, and the 
 
 ## My Agent Session
 
-This project was built pair-programming style with local AI agents (an openclaw session driving a self-hosted Forgejo + Kanboard workflow). The agents planned phases, wrote and reviewed code through a real PR process (every change merged via review, including a dependency CVE adjudication), ran the 373-test suite, and built the release artifacts — while the human steered. Fitting, for an app about talking to your computer instead of typing at it.
+This project was built pair-programming style with local AI agents. The agents planned phases, wrote and reviewed code through a real PR process (every change merged via review, including a dependency CVE adjudication), ran the 373-test suite, and built the release artifacts — while the human steered. Fitting, for an app about talking to your computer instead of typing at it.
 
 ## Prize Categories
 

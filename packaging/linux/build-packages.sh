@@ -106,7 +106,7 @@ Description: Local Whisper-powered voice-to-text dictation (daemon + TUI + GUI)
  transcription, optional local-LLM post-processing. Includes the daemon,
  a TUI controller, an Avalonia GUI controller, and a systemd user unit.
  Installed to /usr/lib/loquacio; no .NET runtime required.
-Homepage: https://elitedesk.local:3001/Innovation/loquacio
+Homepage: https://github.com/JamesDBartlett3/Loquacio
 EOF
 cat > "$PKGROOT/DEBIAN/postinst" <<'EOS'
 #!/bin/sh

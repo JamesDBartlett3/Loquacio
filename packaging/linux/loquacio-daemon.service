@@ -1,6 +1,6 @@
 [Unit]
 Description=Loquacio Daemon (local voice-to-text)
-Documentation=https://elitedesk.local:3001/Innovation/loquacio
+Documentation=https://github.com/JamesDBartlett3/Loquacio
 After=pipewire.service pipewire.socket
 Wants=pipewire.service
 

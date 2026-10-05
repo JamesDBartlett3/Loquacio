@@ -311,7 +311,7 @@ public class SettingsPersistenceServiceTests : IDisposable
             ModelSize = "large-v3",
             Language = "en",
             Gain = 2.5,
-            CustomWords = ["OpenClaw", "Forgejo"]
+            CustomWords = ["OpenClaw", "Kanban"]
         };
 
         svc.Save(settings);
@@ -321,7 +321,7 @@ public class SettingsPersistenceServiceTests : IDisposable
         Assert.Equal("large-v3", loaded.ModelSize);
         Assert.Equal("en", loaded.Language);
         Assert.Equal(2.5, loaded.Gain);
-        Assert.Equal(new List<string> { "OpenClaw", "Forgejo" }, loaded.CustomWords);
+        Assert.Equal(new List<string> { "OpenClaw", "Kanban" }, loaded.CustomWords);
     }
 
     [Fact]
