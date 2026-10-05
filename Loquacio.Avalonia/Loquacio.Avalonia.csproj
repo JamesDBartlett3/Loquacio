@@ -50,6 +50,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\loquacio-icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Loquacio.Core\Loquacio.Core.csproj" />
     <ProjectReference Include="..\Loquacio.Shared\Loquacio.Shared.csproj" />
   </ItemGroup>

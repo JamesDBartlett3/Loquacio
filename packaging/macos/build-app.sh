@@ -105,7 +105,12 @@ EOF
 # Note: In production, use a proper .icns file created from high-res PNGs
 # This is a minimal placeholder that works
 ICON_SVG="$CONTENTS/Resources/app-icon.svg"
-cat > "$ICON_SVG" <<'EOS'
+REPO_LOGO_SVG="$(cd "$(dirname "$0")/../.." && pwd)/Assets/loquacio-logo.svg"
+if [ -f "$REPO_LOGO_SVG" ]; then
+  cp "$REPO_LOGO_SVG" "$ICON_SVG"
+else
+  echo "WARNING: $REPO_LOGO_SVG not found, using placeholder icon"
+  cat > "$ICON_SVG" <<'EOS'
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">
   <defs>
@@ -121,6 +126,7 @@ cat > "$ICON_SVG" <<'EOS'
   <circle cx="192" cy="128" r="16" fill="white" opacity="0.7"/>
 </svg>
 EOS
+fi
 
 # Convert SVG to ICNS (requires sips or iconutil)
 if command -v iconutil >/dev/null 2>&1; then

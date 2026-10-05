@@ -1,10 +1,21 @@
-# MSIX Package Assets
+# Package & Icon Assets
 
-This directory contains the image assets required for MSIX packaging.
+This directory contains the image assets required for MSIX packaging, plus the
+canonical app logo.
 
-## Required Images
+## Logo
 
-All images should be PNG format. Create these using your preferred graphics tool (Paint.NET, Photoshop, GIMP, etc.).
+- `loquacio-logo.svg` — the canonical Loquacio swirl mark (vector). All icons
+  in the repo (tray `.ico` files, `app_icon.ico`, flatpak SVG, macOS `.icns`)
+  are generated from this file.
+- `app_icon.ico` — multi-size Windows application icon (16–256 px), referenced
+  by `ApplicationIcon` in `Loquacio/Loquacio.csproj`.
+- `hero-banner.png` — README hero image containing the same mark.
+
+## MSIX Tile Assets
+
+All tile/splash images are PNG, generated from `loquacio-logo.svg`
+(transparent background; `SplashScreen.png` uses the brand navy).
 
 | File | Size | Purpose |
 |------|------|---------|
@@ -16,29 +27,14 @@ All images should be PNG format. Create these using your preferred graphics tool
 | LargeTile.png | 310x310 px | Large tile |
 | SplashScreen.png | 620x300 px | App launch splash screen |
 
-## Recommended Design
+## Regenerating
 
-- Use a microphone icon or speech wave graphic
-- Primary color: #0078D4 (Windows blue) or similar
-- Transparent background where possible
-- Clean, minimalist design
-- Consistent style across all sizes
+The icons and tiles are rendered from the SVG with `cairosvg` + Pillow. If
+`loquacio-logo.svg` changes, regenerate:
 
-## Creating These Assets
+1. Render the SVG to PNG at each required size.
+2. Rebuild the multi-frame `.ico` files (sizes 16/24/32/48/256).
+3. Re-emit the tile PNGs and splash screen.
 
-1. Create a 620x300 px design first (highest resolution)
-2. Scale down to other sizes
-3. Ensure smallest sizes remain readable (44x44 and 50x50)
-4. Use PNG format with transparency
-
-## Windows App Studio (Alternative)
-
-Alternatively, generate default assets using Microsoft's tools:
-- [Windows App Studio](https://appstudio.microsoft.com/)
-- Or use Visual Studio's Package.appxmanifest designer to auto-generate placeholder icons
-
-## Notes
-
-- These assets are referenced in both `Package.appxmanifest` and `Loquacio.Package.wapproj`
-- Assets must be present before building the MSIX package
-- Test the MSIX installation with placeholder icons first, then replace with final graphics
+These assets are referenced in both `Package.appxmanifest` and
+`Loquacio.Package.wapproj`.

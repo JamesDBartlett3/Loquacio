@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 
@@ -41,8 +42,12 @@ public sealed class TrayService : IDisposable
         quitItem.Click += (_, _) => quitApp();
         menu.Add(quitItem);
 
+        using var iconStream = AssetLoader.Open(
+            new Uri("avares://Loquacio.Avalonia/Assets/loquacio-icon.png"));
+
         _trayIcon = new TrayIcon
         {
+            Icon = new WindowIcon(iconStream),
             Menu = menu,
             ToolTipText = "Loquacio",
             IsVisible = true
