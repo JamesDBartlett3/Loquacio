@@ -69,8 +69,8 @@ public sealed class WpfSettingsPersistenceService
 /// </summary>
 public sealed class WpfControllerSettings
 {
-    // General
-    public string ActivationMode { get; set; } = "continuous";
+    // General — activation mode lives in the daemon's settings.json
+    // (Activation.Mode) and is not persisted here.
     public string HotkeyDisplay { get; set; } = "Ctrl+Alt+D";
     public bool KeywordEnabled { get; set; } = true;
     public string Keyword { get; set; } = "Hey Dictate";

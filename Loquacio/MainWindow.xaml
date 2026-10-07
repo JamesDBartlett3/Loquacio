@@ -36,12 +36,43 @@
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
 
-        <!-- Sidebar navigation item -->
+        <!-- Sidebar navigation item. Uses the same accent brushes as the rest of
+             the app (e.g. the mode switch thumb) instead of the Fluent theme's
+             ListBoxItemSelected* brushes, which don't track the system accent. -->
         <Style x:Key="NavItemStyle" TargetType="ListBoxItem">
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
             <Setter Property="Padding" Value="12,9"/>
             <Setter Property="Margin" Value="0,1"/>
             <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Border" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                Background="Transparent">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background"
+                                        Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsSelected" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Border" Property="Background"
+                                        Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Two-way mode switch: both labels always visible; the thumb slides

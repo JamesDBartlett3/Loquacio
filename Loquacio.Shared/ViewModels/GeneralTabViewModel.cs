@@ -70,7 +70,6 @@ public partial class GeneralTabViewModel : ObservableObject
     [ObservableProperty]
     private bool _notificationsEnabled = true;
 
-    public string[] ActivationModes { get; } = { "continuous", "push-to-talk" };
     public string[] OutputModes { get; } = { "inject", "clipboard", "type" };
 
     /// <summary>Per-action capture indicators for the hotkey row buttons.</summary>
@@ -142,6 +141,19 @@ public partial class GeneralTabViewModel : ObservableObject
             }
             catch (OperationCanceledException) { }
         }, ct);
+    }
+
+    /// <summary>
+    /// Syncs the activation mode from a daemon status update without triggering
+    /// an auto-apply round-trip back to the daemon. The daemon is the source of
+    /// truth for the live mode.
+    /// </summary>
+    public void ApplyDaemonMode(string mode)
+    {
+        if (string.Equals(ActivationMode, mode, StringComparison.OrdinalIgnoreCase)) return;
+        _loading = true;
+        try { ActivationMode = mode; }
+        finally { _loading = false; }
     }
 
     // ── Hotkey capture ──

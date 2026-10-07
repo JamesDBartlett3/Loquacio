@@ -156,6 +156,14 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         activation.SettingsSaved += OnSettingsSaved;
         vocabulary.SettingsSaved += OnSettingsSaved;
         LlmSettings.SettingsSaved += OnSettingsSaved;
+
+        // Keep the tray menu's LLM toggle in sync with the LLM tab
+        LlmSettings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(LLMTabViewModel.IsLlmEnabled))
+                _dispatcher.BeginInvoke(() =>
+                    _trayIcon.UpdateMenuState(IsPushToTalk, LlmSettings.IsLlmEnabled));
+        };
     }
 
     private async void OnSettingsSaved(object? sender, EventArgs e)
@@ -200,8 +208,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<TranscriptionResult> TranscriptionHistory { get; } = [];
 
-    public string[] ActivationModes { get; } = { "Continuous", "Push-to-Talk" };
-
     public WpfControllerViewModel(
         IDaemonProxy daemon,
         IDispatcherService dispatcher,
@@ -232,11 +238,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         var s = _settings.Load();
         if (s == null) return;
 
-        CurrentMode = s.ActivationMode switch
-        {
-            "push-to-talk" => "Push-to-Talk",
-            _ => "Continuous" // "keyword" falls back to Continuous (keyword activation is disabled)
-        };
         MinimizeToTray = s.MinimizeToTray;
         CloseToTray = s.CloseToTray;
         StartMinimized = s.StartMinimized;
@@ -251,11 +252,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     {
         var s = new WpfControllerSettings
         {
-            ActivationMode = CurrentMode switch
-            {
-                "Push-to-Talk" => "push-to-talk",
-                _ => "continuous"
-            },
             MinimizeToTray = MinimizeToTray,
             CloseToTray = CloseToTray,
             StartMinimized = StartMinimized,
@@ -353,7 +349,12 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                     else
                         snapshot = await p.GetSettingsAsync();
                 }
-                if (snapshot is not null) RefreshModelStatus(snapshot);
+                if (snapshot is not null)
+                {
+                    RefreshModelStatus(snapshot);
+                    // Sync the mode drop-down with the daemon's persisted mode on connect
+                    ActivationSettings?.ApplyDaemonMode(snapshot.Activation.Mode);
+                }
             }
 
             // Start health monitoring if lifecycle service is available (external daemon mode only;
@@ -392,6 +393,13 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                         ActivationMode.PushToTalk => "Push-to-Talk",
                         _ => "Continuous",
                     };
+                    // Keep the Activation & Hotkeys drop-down in sync with the live mode
+                    ActivationSettings?.ApplyDaemonMode(s.Mode switch
+                    {
+                        ActivationMode.PushToTalk => "push-to-talk",
+                        _ => "continuous",
+                    });
+                    _trayIcon.UpdateMenuState(IsPushToTalk, LlmSettings?.IsLlmEnabled ?? true);
                     StatusText = s.StatusText;
                     StatusColor = s.StatusColor;
                     AudioLevel = s.AudioLevel;
@@ -589,8 +597,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Stops the background service when the controller exits — the UI and the
-    /// service launch and quit together. A service that was already running
-    /// before the UI started (e.g. started standalone for the TUI) is left alone.
+    /// service launch and quit together.
     /// </summary>
     public async Task ShutdownAsync()
     {
@@ -601,7 +608,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        if (_lifecycle is { StartedByController: true })
+        if (_lifecycle is not null)
         {
             try { await _lifecycle.StopDaemonAsync(); }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to stop background service on exit"); }

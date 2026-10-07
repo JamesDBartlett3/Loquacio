@@ -25,10 +25,14 @@ public interface ITrayIconService : IDisposable
     void Hide();
     void UpdateTooltip(string tooltip);
     void UpdateState(TrayIconState state);
+    /// <summary>Updates menu toggle state (mode, LLM post-processing) shown in the tray context menu.</summary>
+    void UpdateMenuState(bool isPushToTalk, bool llmEnabled);
     void ShowNotification(string title, string message, int timeout = 0);
 
     event EventHandler? ShowRequested;
     event EventHandler? ToggleListeningRequested;
+    event EventHandler? ToggleModeRequested;
+    event EventHandler? ToggleLlmRequested;
     event EventHandler? ExitRequested;
     event EventHandler? SettingsRequested;
 }

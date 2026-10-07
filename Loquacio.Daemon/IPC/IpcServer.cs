@@ -571,6 +571,20 @@ public class IpcServer : IAsyncDisposable
                 try { await sp.GetRequiredService<HotkeyManager>().ReapplyHotkeysAsync(ct); }
                 catch (Exception ex) { _logger.LogWarning(ex, "Failed to reapply hotkeys after settings update"); }
 
+                // Live mode change: persisting Activation.Mode is not enough — the
+                // activation manager has to switch so the new mode actually takes
+                // effect (and a mode status update is broadcast to all controllers).
+                if (!string.Equals(settings.Activation.Mode, previousSettings.Activation.Mode, StringComparison.OrdinalIgnoreCase))
+                {
+                    var mode = settings.Activation.Mode.ToLowerInvariant() switch
+                    {
+                        "push-to-talk" => ActivationMode.PushToTalk,
+                        _ => ActivationMode.Continuous,
+                    };
+                    try { await sp.GetRequiredService<IActivationManagerService>().SwitchModeAsync(mode, ct); }
+                    catch (Exception ex) { _logger.LogWarning(ex, "Failed to apply activation mode change"); }
+                }
+
                 // Restart keyword detection with the new keyword
                 try { await sp.GetRequiredService<IActivationManagerService>().ApplyActivationSettingsAsync(ct); }
                 catch (Exception ex) { _logger.LogWarning(ex, "Failed to reapply activation settings"); }

@@ -3,18 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Padding="12">
     <StackPanel>
-        <Grid Margin="0,0,0,4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Label Content="Activation Mode" FontWeight="SemiBold"/>
-            <Control Grid.Column="1" Style="{StaticResource InfoIconStyle}" Margin="6,0,0,0"
-                     Tag="Continuous (default): the app listens continuously; each speaking pause is processed and typed automatically. Hands-free dictation.&#10;&#10;Push-to-Talk: press the hotkey to start a dictation and press again to stop. Precise control, no background noise."/>
-        </Grid>
-        <ComboBox ItemsSource="{Binding ActivationModes}"
-                  SelectedItem="{Binding ActivationMode}"
-                  Margin="0,0,0,12"/>
+        <!-- Activation mode has a single control: the Continuous / Push-to-Talk
+             switch on the Dashboard. -->
+        <TextBlock Text="Activation mode is controlled by the switch on the Dashboard."
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Margin="0,0,0,12"/>
 
         <!-- Hotkey Configuration -->
         <Label Content="Hotkeys" FontWeight="SemiBold" Margin="0,0,0,4"/>

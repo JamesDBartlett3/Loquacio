@@ -368,17 +368,18 @@ public sealed class HotkeyManager(
 
     private void InitializeWin32()
     {
-        // The window and its message pump must share a thread. WM_HOTKEY is
-        // delivered to the thread that owns the window, not to an arbitrary
-        // worker that later calls GetMessage for that window.
+        // The window, the hotkey registration, and the GetMessage pump must all
+        // run on one dedicated thread — WM_HOTKEY is delivered to the thread that
+        // owns the window, so an await here would resume on a different pool
+        // thread and the pump would never see the message. Keep it synchronous.
         _eventLoopTask = Task.Run(() => Win32MessageLoop(_cts!.Token), _cts!.Token);
     }
 
-    private async Task Win32MessageLoop(CancellationToken ct)
+    private void Win32MessageLoop(CancellationToken ct)
     {
         logger.LogInformation("Win32 hotkey message loop started.");
         _win32ThreadId = Win32.GetCurrentThreadId();
-        await InitializeWin32OnPumpThread();
+        InitializeWin32OnPumpThread();
         if (_win32Hwnd == IntPtr.Zero)
             return;
 
@@ -386,14 +387,15 @@ public sealed class HotkeyManager(
         {
             try
             {
-                // GetMessage blocks until a message arrives; use a timeout check
+                // GetMessage blocks until a message arrives; shutdown uses
+                // PostThreadMessage(WM_QUIT), which wakes the pump.
                 var result = Win32.GetMessage(out MSG msg, _win32Hwnd, 0, 0);
                 if (result == 0) // WM_QUIT
                     break;
                 if (result == -1) // Error
                 {
                     logger.LogError("Win32: GetMessage returned error");
-                    await Task.Delay(1000, ct);
+                    Thread.Sleep(1000);
                     continue;
                 }
 
@@ -401,7 +403,9 @@ public sealed class HotkeyManager(
                 {
                     logger.LogDebug("Win32: WM_HOTKEY received (id={Id})", msg.wParam);
                     var action = _registeredWin32Actions.FirstOrDefault(a => a.id == (int)msg.wParam).action ?? "toggle";
-                    await DispatchHotkeyActionAsync(action);
+                    // Dispatch off the pump thread; blocking it here would stall
+                    // further hotkey deliveries.
+                    _ = Task.Run(() => DispatchHotkeyActionAsync(action));
                 }
 
                 Win32.TranslateMessage(ref msg);
@@ -414,24 +418,25 @@ public sealed class HotkeyManager(
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error in Win32 message loop");
-                await Task.Delay(1000, ct);
+                Thread.Sleep(1000);
             }
         }
 
         logger.LogInformation("Win32 hotkey message loop stopped.");
     }
 
-    private async Task InitializeWin32OnPumpThread()
+    private void InitializeWin32OnPumpThread()
     {
         try
         {
             // Create a message-only window to receive WM_HOTKEY
             var hInstance = Win32.GetModuleHandle(null);
             _win32Hwnd = Win32.CreateWindowEx(
-                Win32.WS_EX_MESSAGEBOX, // Message-only window
+                0, // WS_EX_* is irrelevant for a message-only window
                 "Static", "", 0,
                 0, 0, 0, 0,
-                IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
+                (IntPtr)(-3), // HWND_MESSAGE — message-only window
+                IntPtr.Zero, hInstance, IntPtr.Zero);
 
             if (_win32Hwnd == IntPtr.Zero)
             {
@@ -576,8 +581,12 @@ public sealed class HotkeyManager(
 
         logger.LogInformation("Reapplying hotkey configuration");
 
-        // Tear down current registrations
+        // Tear down current registrations. On Windows, wake the pump thread
+        // first — after the window is destroyed GetMessage would just return -1
+        // forever, so the only clean exit is WM_QUIT.
         _cts?.Cancel();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _win32ThreadId != 0)
+            Win32.PostThreadMessage(_win32ThreadId, (uint)Win32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
         if (_eventLoopTask is not null)
         {
             try { await Task.WhenAny(_eventLoopTask, Task.Delay(TimeSpan.FromSeconds(2), ct)); } catch { }

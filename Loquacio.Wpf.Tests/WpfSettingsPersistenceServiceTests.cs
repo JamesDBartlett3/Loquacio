@@ -33,7 +33,6 @@ public class WpfSettingsPersistenceServiceTests
 
             var settings = new WpfControllerSettings
             {
-                ActivationMode = "push-to-talk",
                 HotkeyDisplay = "Ctrl+Shift+V",
                 KeywordEnabled = false,
                 Keyword = "Computer",
@@ -62,7 +61,6 @@ public class WpfSettingsPersistenceServiceTests
             var loaded = svc.Load();
 
             Assert.NotNull(loaded);
-            Assert.Equal("push-to-talk", loaded!.ActivationMode);
             Assert.Equal("Ctrl+Shift+V", loaded.HotkeyDisplay);
             Assert.False(loaded.KeywordEnabled);
             Assert.Equal("Computer", loaded.Keyword);
@@ -137,7 +135,6 @@ public class WpfSettingsPersistenceServiceTests
     {
         var settings = new WpfControllerSettings();
 
-        Assert.Equal("continuous", settings.ActivationMode);
         Assert.Equal("Ctrl+Alt+D", settings.HotkeyDisplay);
         Assert.True(settings.KeywordEnabled);
         Assert.Equal("Hey Dictate", settings.Keyword);

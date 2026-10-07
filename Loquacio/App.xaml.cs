@@ -65,12 +65,14 @@ public partial class App : Application
         await _controllerViewModel.InitializeAsync();
     }
 
-    private async void OnExit(object sender, ExitEventArgs e)
+    private void OnExit(object sender, ExitEventArgs e)
     {
-        // The UI and the background service launch and quit together.
+        // The UI and the background service launch and quit together. Blocking
+        // here on purpose: an async exit handler can be cut short when WPF
+        // finishes shutdown, which would leave the daemon process running.
         if (_controllerViewModel is not null)
         {
-            try { await _controllerViewModel.ShutdownAsync(); }
+            try { _controllerViewModel.ShutdownAsync().GetAwaiter().GetResult(); }
             catch (Exception ex) { Console.Error.WriteLine($"Failed to stop background service on exit: {ex.Message}"); }
             _controllerViewModel.Dispose();
         }

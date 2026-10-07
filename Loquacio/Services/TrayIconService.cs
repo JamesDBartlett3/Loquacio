@@ -33,8 +33,15 @@ public class TrayIconService : ITrayIconService
 
     public event EventHandler? ShowRequested;
     public event EventHandler? ToggleListeningRequested;
+    public event EventHandler? ToggleModeRequested;
+    public event EventHandler? ToggleLlmRequested;
     public event EventHandler? ExitRequested;
     public event EventHandler? SettingsRequested;
+
+    // Current toggle state reflected in the context menu
+    private bool _isListening;
+    private bool _isPushToTalk;
+    private bool _llmEnabled = true;
 
     public void Initialize()
     {
@@ -62,7 +69,9 @@ public class TrayIconService : ITrayIconService
             _notifyIcon.Icon = SystemIcons.Application;
         }
 
-        _notifyIcon.DoubleClickCommand = new SimpleCommand(_ => ShowRequested?.Invoke(this, EventArgs.Empty));
+        // TrayMouseDoubleClick is the reliable entry point — the DoubleClickCommand
+        // path proved flaky when the window was hidden to the tray.
+        _notifyIcon.TrayMouseDoubleClick += (_, _) => ShowRequested?.Invoke(this, EventArgs.Empty);
 
         // Attach the context menu so right-click works
         _notifyIcon.ContextMenu = BuildContextMenu(isListening: false);
@@ -90,11 +99,11 @@ public class TrayIconService : ITrayIconService
     {
         if (_notifyIcon == null) return;
 
+        _isListening = state == TrayIconState.Listening;
         UpdateTooltip(_stateTooltips.GetValueOrDefault(state, "Loquacio"));
 
-        // Refresh context menu to reflect current listening state
-        var isListening = state == TrayIconState.Listening;
-        _notifyIcon.ContextMenu = BuildContextMenu(isListening);
+        // Refresh context menu to reflect current state
+        _notifyIcon.ContextMenu = BuildContextMenu(_isListening);
 
         // Load state-specific icon from embedded resources
         try
@@ -124,6 +133,16 @@ public class TrayIconService : ITrayIconService
         _notifyIcon?.ShowBalloonTip(title, message, BalloonIcon.Info);
     }
 
+    /// <summary>Updates the toggle states (mode, LLM post-processing) shown in the context menu.</summary>
+    public void UpdateMenuState(bool isPushToTalk, bool llmEnabled)
+    {
+        if (_isPushToTalk == isPushToTalk && _llmEnabled == llmEnabled) return;
+        _isPushToTalk = isPushToTalk;
+        _llmEnabled = llmEnabled;
+        if (_notifyIcon != null)
+            _notifyIcon.ContextMenu = BuildContextMenu(_isListening);
+    }
+
     /// <summary>
     /// Builds the context menu for the tray icon.
     /// Called by the XAML renderer when the tray icon is right-clicked.
@@ -148,6 +167,25 @@ public class TrayIconService : ITrayIconService
         };
         toggleItem.Click += (_, _) => ToggleListeningRequested?.Invoke(this, EventArgs.Empty);
         menu.Items.Add(toggleItem);
+
+        var modeItem = new System.Windows.Controls.MenuItem
+        {
+            Header = "Push-to-Talk Mode",
+            IsCheckable = true,
+            IsChecked = _isPushToTalk,
+            ToolTip = "Checked: hold/tap hotkey to dictate. Unchecked: listen continuously."
+        };
+        modeItem.Click += (_, _) => ToggleModeRequested?.Invoke(this, EventArgs.Empty);
+        menu.Items.Add(modeItem);
+
+        var llmItem = new System.Windows.Controls.MenuItem
+        {
+            Header = "LLM Post-Processing",
+            IsCheckable = true,
+            IsChecked = _llmEnabled
+        };
+        llmItem.Click += (_, _) => ToggleLlmRequested?.Invoke(this, EventArgs.Empty);
+        menu.Items.Add(llmItem);
 
         var settingsItem = new System.Windows.Controls.MenuItem
         {
@@ -176,18 +214,4 @@ public class TrayIconService : ITrayIconService
         _notifyIcon?.Dispose();
         GC.SuppressFinalize(this);
     }
-}
-
-/// <summary>
-/// Simple ICommand implementation for tray icon command bindings.
-/// </summary>
-internal sealed class SimpleCommand : System.Windows.Input.ICommand
-{
-    private readonly Action<object?> _execute;
-
-    public SimpleCommand(Action<object?> execute) => _execute = execute;
-
-    public bool CanExecute(object? parameter) => true;
-    public void Execute(object? parameter) => _execute(parameter);
-    public event EventHandler? CanExecuteChanged { add { } remove { } }
 }

@@ -34,8 +34,19 @@ public partial class MainWindow : Window
         {
             await _viewModel.ToggleListeningCommand.ExecuteAsync(null);
         };
+        _trayIconService.ToggleModeRequested += (_, _) =>
+        {
+            // Flipping the switch sends SetMode to the daemon, which confirms
+            // via a status broadcast that re-syncs the menu.
+            _viewModel.IsPushToTalk = !_viewModel.IsPushToTalk;
+        };
+        _trayIconService.ToggleLlmRequested += (_, _) =>
+        {
+            if (_viewModel.LlmSettings is { } llm)
+                llm.IsLlmEnabled = !llm.IsLlmEnabled; // auto-applies and pushes to the daemon
+        };
         _trayIconService.ExitRequested += OnTrayExitRequested;
-        _trayIconService.SettingsRequested += OnTrayShowRequested;
+        _trayIconService.SettingsRequested += OnTraySettingsRequested;
     }
 
     private void OnStateChanged(object? sender, EventArgs e)
@@ -77,6 +88,19 @@ public partial class MainWindow : Window
             WindowState = WindowState.Normal;
             Activate();
             _trayIconService.UpdateState(_viewModel.IsListening ? TrayIconState.Listening : TrayIconState.Idle);
+        });
+    }
+
+    /// <summary>Tray "Settings…" — show the window and open the Activation & Hotkeys tab.</summary>
+    private void OnTraySettingsRequested(object? sender, EventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            Show();
+            WindowState = WindowState.Normal;
+            Activate();
+            if (FindName("NavList") is System.Windows.Controls.ListBox nav)
+                nav.SelectedIndex = 4;
         });
     }
 
