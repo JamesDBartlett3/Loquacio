@@ -56,8 +56,8 @@ public class ActivationManagerService : IActivationManagerService
         _logger.LogInformation("Activation manager initialized — mode: {Mode}", _currentMode);
     }
 
-    // Global hotkey registration is owned by the daemon's HotkeyManager (Win32/X11);
-    // the legacy IHotkeyService here is a no-op on the daemon.
+    // Global hotkey registration is owned by the engine's HotkeyManager (Win32/X11);
+    // the legacy IHotkeyService here is a no-op on the engine.
 
     private async void OnHotkeyPressed(object? sender, string action)
     {

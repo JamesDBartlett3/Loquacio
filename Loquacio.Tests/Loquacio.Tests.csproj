@@ -35,7 +35,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Loquacio.Core\Loquacio.Core.csproj" />
     <ProjectReference Include="..\Loquacio.Shared\Loquacio.Shared.csproj" />
-    <ProjectReference Include="..\Loquacio.Daemon\Loquacio.Daemon.csproj" />
+    <ProjectReference Include="..\Loquacio.Engine\Loquacio.Engine.csproj" />
     <ProjectReference Include="..\Loquacio.Avalonia\Loquacio.Avalonia.csproj" />
   </ItemGroup>
 

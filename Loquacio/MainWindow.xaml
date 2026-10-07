@@ -233,7 +233,7 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Background Service" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                        <TextBlock Text="{Binding DaemonStateText}" Margin="8,0,0,0"
+                                        <TextBlock Text="{Binding EngineStateText}" Margin="8,0,0,0"
                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -243,7 +243,7 @@
                                                       AutomationProperties.AutomationId="ModeSwitch"
                                                       ToolTip="Continuous: listens continuously and types automatically at each pause. Push-to-Talk: press the hotkey to start and again to stop."
                                                       Margin="0,0,8,0"/>
-                                        <Button Content="Restart Background Service" Command="{Binding RestartDaemonCommand}"
+                                        <Button Content="Restart Background Service" Command="{Binding RestartEngineCommand}"
                                                 MinHeight="32" Padding="14,4"/>
                                     </StackPanel>
                                 </Grid>
@@ -367,7 +367,7 @@
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel>
                                 <TextBlock Text="Background Service" Style="{StaticResource SectionHeaderStyle}"/>
-                                <CheckBox Content="Run the background service automatically when needed" IsChecked="{Binding AutoStartDaemon}" Margin="0,3"
+                                <CheckBox Content="Run the background service automatically when needed" IsChecked="{Binding AutoStartEngine}" Margin="0,3"
                                           ToolTip="Launch the background service automatically when the controller starts"/>
                                 <CheckBox Content="Start with Windows" IsChecked="{Binding StartWithWindows}" Margin="0,3"
                                           ToolTip="Launch Loquacio automatically when you log into Windows"/>

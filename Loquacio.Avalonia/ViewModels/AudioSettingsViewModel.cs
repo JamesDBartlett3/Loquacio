@@ -2,7 +2,7 @@ namespace Loquacio.Avalonia.ViewModels;
 
 /// <summary>
 /// Audio settings tab for the controller.
-/// Shows current daemon audio configuration (read-only display in controller mode).
+/// Shows current engine audio configuration (read-only display in controller mode).
 /// </summary>
 public partial class AudioSettingsViewModel : ObservableObject
 {

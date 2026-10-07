@@ -40,7 +40,7 @@ echo "Building macOS .app bundle version $VERSION..."
 # ---- Build the binaries ----
 if [[ "$SKIP_BUILD" != true ]]; then
   echo "Publishing binaries for osx-x64..."
-  dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r osx-x64 \
+  dotnet publish Loquacio.Engine/Loquacio.Engine.csproj -c Release -r osx-x64 \
     --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
   dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r osx-x64 \
     --self-contained true -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" -o "$PUBLISH"
@@ -54,7 +54,7 @@ mkdir -p "$CONTENTS/Frameworks"
 
 # ---- Copy binaries to Frameworks ----
 cp -r "$PUBLISH"/. "$CONTENTS/Frameworks/"
-chmod 755 "$CONTENTS/Frameworks/loquacio-daemon"
+chmod 755 "$CONTENTS/Frameworks/loquacio-engine"
 chmod 755 "$CONTENTS/Frameworks/loquacio-tui"
 
 # ---- Create launcher script ----
@@ -157,25 +157,25 @@ else
 fi
 
 # ---- Create launchd agent template ----
-cat > "$CONTENTS/Resources/com.github.jamesdbartlett3.loquacio.daemon.plist" <<EOF
+cat > "$CONTENTS/Resources/com.github.jamesdbartlett3.loquacio.engine.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.github.jamesdbartlett3.loquacio.daemon</string>
+    <string>com.github.jamesdbartlett3.loquacio.engine</string>
     <key>ProgramArguments</key>
     <array>
-        <string>$CONTENTS/Frameworks/loquacio-daemon</string>
+        <string>$CONTENTS/Frameworks/loquacio-engine</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>~/Library/Logs/Loquacio/daemon.log</string>
+    <string>~/Library/Logs/Loquacio/engine.log</string>
     <key>StandardErrorPath</key>
-    <string>~/Library/Logs/Loquacio/daemon-error.log</string>
+    <string>~/Library/Logs/Loquacio/engine-error.log</string>
     <key>ProcessType</key>
     <string>Interactive</string>
 </dict>

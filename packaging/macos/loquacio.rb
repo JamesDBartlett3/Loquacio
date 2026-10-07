@@ -19,7 +19,7 @@ cask "loquacio" do
 
   app "Loquacio.app"
 
-  uninstall launchctl: "com.github.jamesdbartlett3.loquacio.daemon",
+  uninstall launchctl: "com.github.jamesdbartlett3.loquacio.engine",
             quit:      "com.github.jamesdbartlett3.loquacio"
 
   zap trash: [

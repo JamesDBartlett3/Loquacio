@@ -43,7 +43,7 @@ public partial class AudioTabViewModel : ObservableObject
 
     public ObservableCollection<AudioDevice> AvailableDevices { get; } = new();
 
-    /// <summary>Raised after settings are saved, so the host can push them to the daemon via IPC.</summary>
+    /// <summary>Raised after settings are saved, so the host can push them to the engine via IPC.</summary>
     public event EventHandler? SettingsSaved;
 
     public AudioTabViewModel(IAudioCaptureService audioCapture, ISettingsService settingsService)
@@ -53,7 +53,7 @@ public partial class AudioTabViewModel : ObservableObject
         LoadAsync();
     }
 
-    /// <summary>Refresh the device list (e.g. after the daemon connects / devices change).</summary>
+    /// <summary>Refresh the device list (e.g. after the engine connects / devices change).</summary>
     public void ReloadDevices()
     {
         SetAvailableDevices(_audioCapture.GetAvailableDevices());

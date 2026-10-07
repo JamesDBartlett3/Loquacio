@@ -47,7 +47,7 @@ public partial class GeneralTabViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
-    // Legacy daemon-side settings kept for persistence/IPC round-trips
+    // Legacy engine-side settings kept for persistence/IPC round-trips
     // (keyword activation is disabled; Avalonia persists these too).
     [ObservableProperty]
     private bool _keywordEnabled = true;
@@ -78,7 +78,7 @@ public partial class GeneralTabViewModel : ObservableObject
     public bool IsCapturingStop => IsCapturingHotkey && CapturingAction == "stop";
     public bool IsCapturingCopy => IsCapturingHotkey && CapturingAction == "copy";
 
-    /// <summary>Raised after settings are saved, so the host can push them to the daemon via IPC.</summary>
+    /// <summary>Raised after settings are saved, so the host can push them to the engine via IPC.</summary>
     public event EventHandler? SettingsSaved;
 
     public GeneralTabViewModel(ISettingsService settingsService, IHotkeyService hotkeyService, IAutoStartService autoStartService)
@@ -114,7 +114,7 @@ public partial class GeneralTabViewModel : ObservableObject
         }
     }
 
-    // ── Auto-apply: any setting change is saved (debounced) and pushed to the daemon ──
+    // ── Auto-apply: any setting change is saved (debounced) and pushed to the engine ──
 
     partial void OnActivationModeChanged(string value) => ScheduleAutoApply();
     partial void OnOutputModeChanged(string value) => ScheduleAutoApply();
@@ -144,11 +144,11 @@ public partial class GeneralTabViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Syncs the activation mode from a daemon status update without triggering
-    /// an auto-apply round-trip back to the daemon. The daemon is the source of
+    /// Syncs the activation mode from a engine status update without triggering
+    /// an auto-apply round-trip back to the engine. The engine is the source of
     /// truth for the live mode.
     /// </summary>
-    public void ApplyDaemonMode(string mode)
+    public void ApplyEngineMode(string mode)
     {
         if (string.Equals(ActivationMode, mode, StringComparison.OrdinalIgnoreCase)) return;
         _loading = true;
@@ -175,7 +175,7 @@ public partial class GeneralTabViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Clears one hotkey binding (empty string = unbound). The daemon skips
+    /// Clears one hotkey binding (empty string = unbound). The engine skips
     /// empty bindings when it re-registers hotkeys, so the OS binding is dropped.
     /// </summary>
     [RelayCommand]
@@ -225,7 +225,7 @@ public partial class GeneralTabViewModel : ObservableObject
 
         var newHotkey = IHotkeyService.FormatHotkey(key, modifiers);
 
-        // Reject combos already bound to a different action — the daemon would
+        // Reject combos already bound to a different action — the engine would
         // have to pick one, which is never what the user wants.
         var bindings = new (string Action, string Value, string Name)[]
         {
@@ -261,7 +261,7 @@ public partial class GeneralTabViewModel : ObservableObject
             default: Hotkey = newHotkey; break;
         }
 
-        // Local registration is a no-op on the controller (the daemon owns real
+        // Local registration is a no-op on the controller (the engine owns real
         // hotkeys and re-registers when the activation settings are pushed).
         if (!unchanged)
         {

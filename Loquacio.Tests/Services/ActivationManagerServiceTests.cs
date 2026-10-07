@@ -7,7 +7,7 @@ namespace Loquacio.Tests.Services;
 
 /// <summary>
 /// Keyword activation is disabled (no working keyword recognizer exists).
-/// These tests pin the disable behavior: the daemon never enters
+/// These tests pin the disable behavior: the engine never enters
 /// KeywordActivated mode and never starts the keyword detector.
 /// </summary>
 public class ActivationManagerServiceTests

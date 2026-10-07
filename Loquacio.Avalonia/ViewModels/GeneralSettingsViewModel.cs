@@ -2,7 +2,7 @@ namespace Loquacio.Avalonia.ViewModels;
 
 /// <summary>
 /// General settings tab — activation mode, output mode, hotkey display.
-/// In controller mode, these send IPC commands to the daemon rather than
+/// In controller mode, these send IPC commands to the engine rather than
 /// directly modifying services.
 /// </summary>
 public partial class GeneralSettingsViewModel : ObservableObject

@@ -128,9 +128,9 @@
         <!-- Footer -->
         <Border Grid.Row="2" Background="#1e1e2e" Padding="16,6">
             <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0" Text="Daemon IPC • Unix Domain Socket" FontSize="11"
+                <TextBlock Grid.Column="0" Text="Engine IPC • Unix Domain Socket" FontSize="11"
                            Foreground="#6c7086" HorizontalAlignment="Center" />
-                <TextBlock Grid.Column="1" Text="{Binding DaemonStateText}" FontSize="11"
+                <TextBlock Grid.Column="1" Text="{Binding EngineStateText}" FontSize="11"
                            Foreground="#6c7086" />
             </Grid>
         </Border>

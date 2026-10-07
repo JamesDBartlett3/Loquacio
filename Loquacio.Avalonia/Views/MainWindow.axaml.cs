@@ -11,6 +11,6 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         // Note: InitializeAsync is called from App.OnFrameworkInitializationCompleted
-        // with the daemon lifecycle service. Do NOT call it here to avoid double-init.
+        // with the engine lifecycle service. Do NOT call it here to avoid double-init.
     }
 }

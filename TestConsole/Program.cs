@@ -15,7 +15,7 @@ services.AddLogging(configure =>
 });
 
 // Add services
-services.AddSingleton<IAudioCaptureService, Loquacio.Daemon.Services.Audio.WasapiAudioCaptureService>();
+services.AddSingleton<IAudioCaptureService, Loquacio.Engine.Services.Audio.WasapiAudioCaptureService>();
 services.AddSingleton<IWhisperProcessorService, WhisperProcessorService>();
 services.AddSingleton<IModelManagerService, ModelManagerService>();
 services.AddSingleton<ISettingsService, SettingsService>();

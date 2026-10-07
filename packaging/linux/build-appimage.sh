@@ -47,15 +47,15 @@ mkdir -p "$APPDIR/usr/lib/$APP"
 
 # Copy published binaries
 cp -r "$PUBLISH"/. "$APPDIR/usr/lib/$APP/"
-chmod 755 "$APPDIR/usr/lib/$APP/loquacio-daemon"
+chmod 755 "$APPDIR/usr/lib/$APP/loquacio-engine"
 chmod 755 "$APPDIR/usr/lib/$APP/loquacio-tui"
 chmod 755 "$APPDIR/usr/lib/$APP/loquacio-avalonia" 2>/dev/null || true
 
 # Create wrapper scripts in /usr/bin
-cat > "$APPDIR/usr/bin/loquacio-daemon" <<'EOS'
+cat > "$APPDIR/usr/bin/loquacio-engine" <<'EOS'
 #!/bin/sh
 cd "$(dirname "$0")/../lib/loquacio"
-exec ./loquacio-daemon "$@"
+exec ./loquacio-engine "$@"
 EOS
 cat > "$APPDIR/usr/bin/loquacio-tui" <<'EOS'
 #!/bin/sh
@@ -120,7 +120,7 @@ export PATH="${APPDIR}/usr/bin:${PATH:-}"
 
 # Launch the requested controller; default is the GUI (avalonia)
 case "${1:-}" in
-  daemon|loquacio-daemon) shift; exec loquacio-daemon "$@" ;;
+  engine|loquacio-engine) shift; exec loquacio-engine "$@" ;;
   tui|loquacio-tui) shift; exec loquacio-tui "$@" ;;
 esac
 exec loquacio-avalonia "$@"

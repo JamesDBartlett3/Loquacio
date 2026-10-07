@@ -7,7 +7,7 @@ This document specifies the macOS packaging approach for Loquacio. macOS package
 ### Primary: .app bundle
 
 The main distribution format is a self-contained .app bundle that includes:
-- Daemon + TUI controller
+- Engine + TUI controller
 - All .NET runtime dependencies
 - System configuration files
 - CGEvent text injection implementation
@@ -26,7 +26,7 @@ Loquacio.app/
 │   │   └── loquacio (launcher script)
 │   ├── Resources/
 │   │   ├── app-icon.icns
-│   │   └── daemon.plist (launchd agent)
+│   │   └── engine.plist (launchd agent)
 │   └── Frameworks/
 │       └── (all .NET runtime and app binaries)
 ```
@@ -35,13 +35,13 @@ Loquacio.app/
 
 ### 1. CGEvent Text Injection
 
-The daemon on macOS uses `CGEvent` from the Application Services framework to inject text into the focused window.
+The engine on macOS uses `CGEvent` from the Application Services framework to inject text into the focused window.
 
-**Implementation location:** `Loquacio.Daemon/Services/TextInjectionService.cs` (`InjectMacOSAsync` + CGEvent P/Invokes) — **IMPLEMENTED** (2026-09-06). Compiles on any OS; CGEvent calls execute only on macOS. Chunk-planning logic (`SplitMacOSUnicodeChunks`) is internal and unit-tested cross-platform.
+**Implementation location:** `Loquacio.Engine/Services/TextInjectionService.cs` (`InjectMacOSAsync` + CGEvent P/Invokes) — **IMPLEMENTED** (2026-09-06). Compiles on any OS; CGEvent calls execute only on macOS. Chunk-planning logic (`SplitMacOSUnicodeChunks`) is internal and unit-tested cross-platform.
 
 Clipboard mode uses `pbcopy` + Cmd+V (CGEvent); direct mode types Unicode via `CGEventKeyboardSetUnicodeString` in ≤20-code-unit chunks with `\n` mapped to Return keystrokes.
 
-**Remaining untested on real hardware** (no macOS available to Cray): requires James to run the daemon on a Mac with Accessibility permission granted.
+**Remaining untested on real hardware** (no macOS available to Cray): requires James to run the engine on a Mac with Accessibility permission granted.
 
 **P/Invoke signatures needed:**
 ```csharp
@@ -55,9 +55,9 @@ public static extern void CGEventKeyboardSetUnicodeString(IntPtr eventRef, int l
 public static extern void CGEventPost(uint location, IntPtr eventRef);
 ```
 
-### 2. launchd Agent for Daemon Autostart
+### 2. launchd Agent for Engine Autostart
 
-**Location:** `~/Library/LaunchAgents/com.github.jamesdbartlett3.loquacio.daemon.plist`
+**Location:** `~/Library/LaunchAgents/com.github.jamesdbartlett3.loquacio.engine.plist`
 
 **Content:**
 ```xml
@@ -66,19 +66,19 @@ public static extern void CGEventPost(uint location, IntPtr eventRef);
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.github.jamesdbartlett3.loquacio.daemon</string>
+    <string>com.github.jamesdbartlett3.loquacio.engine</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Applications/Loquacio.app/Contents/Frameworks/loquacio-daemon</string>
+        <string>/Applications/Loquacio.app/Contents/Frameworks/loquacio-engine</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
     <key>StandardOutPath</key>
-    <string>~/Library/Logs/Loquacio/daemon.log</string>
+    <string>~/Library/Logs/Loquacio/engine.log</string>
     <key>StandardErrorPath</key>
-    <string>~/Library/Logs/Loquacio/daemon-error.log</string>
+    <string>~/Library/Logs/Loquacio/engine-error.log</string>
     <key>ProcessType</key>
     <string>Interactive</string>
 </dict>
@@ -89,9 +89,9 @@ public static extern void CGEventPost(uint location, IntPtr eventRef);
 
 ### 3. Global Hotkeys on macOS
 
-**Approach:** Use `NSEvent` global event monitoring in the daemon.
+**Approach:** Use `NSEvent` global event monitoring in the engine.
 
-**Implementation:** `Loquacio.Daemon/Platform/macOS/MacOSHotkeyService.cs` — **still spec-only** (needs a Mac to develop against).
+**Implementation:** `Loquacio.Engine/Platform/macOS/MacOSHotkeyService.cs` — **still spec-only** (needs a Mac to develop against).
 
 **Requirements:**
 - Add reference to `AppKit` framework
@@ -104,7 +104,7 @@ public static extern void CGEventPost(uint location, IntPtr eventRef);
 
 **Approach:** Use `AVFoundation` for audio capture.
 
-**Implementation:** `Loquacio.Daemon/Platform/macOS/MacOSAudioCaptureService.cs`
+**Implementation:** `Loquacio.Engine/Platform/macOS/MacOSAudioCaptureService.cs`
 
 **Requirements:**
 - Add reference to `AVFoundation` framework
@@ -159,7 +159,7 @@ jobs:
 
       - name: Publish binaries
         run: |
-          dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
+          dotnet publish Loquacio.Engine/Loquacio.Engine.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
           dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=false -o dist/publish/osx-x64
 
       - name: Build .app bundle
@@ -174,11 +174,11 @@ jobs:
 
 ## Testing Checklist
 
-- [ ] Daemon starts via launchd agent
+- [ ] Engine starts via launchd agent
 - [ ] Audio capture works (microphone permission granted)
 - [ ] Global hotkey detection works (accessibility permission granted)
 - [ ] CGEvent text injection into focused window works
-- [ ] TUI controller launches and connects to daemon
+- [ ] TUI controller launches and connects to engine
 - [ ] Settings persist across restarts
 - [ ] App bundle passes Gatekeeper (ad-hoc signature)
 - [ ] Homebrew cask installs and launches correctly
@@ -200,7 +200,7 @@ jobs:
 
 ## Next Steps
 
-1. Implement macOS platform services in `Loquacio.Daemon/Platform/macOS/`
+1. Implement macOS platform services in `Loquacio.Engine/Platform/macOS/`
 2. Create `packaging/macos/build-app.sh` script
 3. Test on real macOS hardware
 4. Set up GitHub Actions for macOS builds

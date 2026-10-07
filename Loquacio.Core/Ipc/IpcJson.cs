@@ -5,7 +5,7 @@ namespace Loquacio.Ipc;
 
 /// <summary>
 /// Shared JSON options for the IPC protocol (used by both <see cref="IpcServer"/>-side
-/// hosts and <see cref="DaemonProxy"/>). Enums serialize as strings so external
+/// hosts and <see cref="EngineProxy"/>). Enums serialize as strings so external
 /// clients can send e.g. "push-to-talk" instead of a raw number; numeric enum values
 /// remain accepted on read for backward compatibility.
 /// </summary>

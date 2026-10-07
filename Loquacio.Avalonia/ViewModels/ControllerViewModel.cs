@@ -7,12 +7,12 @@ namespace Loquacio.Avalonia.ViewModels;
 
 /// <summary>
 /// Main ViewModel for the Avalonia controller.
-/// Connects to the daemon via IPC and displays status, transcriptions, and settings.
-/// Does NOT own the audio/whisper pipeline — that lives in the daemon.
+/// Connects to the engine via IPC and displays status, transcriptions, and settings.
+/// Does NOT own the audio/whisper pipeline — that lives in the engine.
 /// </summary>
 public partial class ControllerViewModel : ObservableObject, IDisposable
 {
-    private readonly IDaemonProxy _daemon;
+    private readonly IEngineProxy _engine;
     private readonly IDispatcherService _dispatcher;
     private readonly SettingsPersistenceService _settings;
     private readonly ILogger<ControllerViewModel> _logger;
@@ -53,14 +53,14 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
     private bool _minimizeToTray = true;
 
     [ObservableProperty]
-    private string _daemonStateText = "Unknown";
+    private string _engineStateText = "Unknown";
 
     public ObservableCollection<TranscriptionResult> TranscriptionHistory { get; } = [];
 
     public string[] ActivationModes { get; } = { "Continuous", "Push-to-Talk" };
 
     public ControllerViewModel(
-        IDaemonProxy daemon,
+        IEngineProxy engine,
         IDispatcherService dispatcher,
         GeneralSettingsViewModel general,
         AudioSettingsViewModel audio,
@@ -70,7 +70,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         SettingsPersistenceService settings,
         ILogger<ControllerViewModel> logger)
     {
-        _daemon = daemon;
+        _engine = engine;
         _dispatcher = dispatcher;
         _settings = settings;
         _logger = logger;
@@ -81,7 +81,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         LLM = llm;
         Vocabulary = vocabulary;
 
-        _daemon.Disconnected += OnDaemonDisconnected;
+        _engine.Disconnected += OnEngineDisconnected;
     }
 
     public void LoadSettings()
@@ -141,27 +141,27 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         _settings.Save(s);
     }
 
-    public async Task InitializeAsync(IDaemonLifecycleService? lifecycleService = null)
+    public async Task InitializeAsync(IEngineLifecycleService? lifecycleService = null)
     {
         // Guard against double-initialization (can happen if multiple lifecycle hooks fire)
         if (_initialized) return;
         _initialized = true;
 
-        // Optionally ensure daemon is running before connecting
+        // Optionally ensure engine is running before connecting
         if (lifecycleService != null)
         {
-            DaemonStateText = lifecycleService.State.ToString();
+            EngineStateText = lifecycleService.State.ToString();
             lifecycleService.StateChanged += (_, state) =>
-                _dispatcher.BeginInvoke(() => DaemonStateText = state.ToString());
+                _dispatcher.BeginInvoke(() => EngineStateText = state.ToString());
 
-            var started = await lifecycleService.EnsureDaemonRunningAsync();
+            var started = await lifecycleService.EnsureEngineRunningAsync();
             if (!started)
             {
                 _dispatcher.BeginInvoke(() =>
                 {
                     IsConnected = false;
-                    ConnectionStatus = "Daemon unavailable";
-                    StatusText = "Cannot start daemon";
+                    ConnectionStatus = "Engine unavailable";
+                    StatusText = "Cannot start engine";
                     StatusColor = "#F44336";
                 });
                 return;
@@ -170,30 +170,30 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
 
         try
         {
-            await _daemon.ConnectAsync();
-            _daemon.SubscribeToUpdates(OnDaemonMessage);
+            await _engine.ConnectAsync();
+            _engine.SubscribeToUpdates(OnEngineMessage);
             _dispatcher.BeginInvoke(() =>
             {
                 IsConnected = true;
                 ConnectionStatus = "Connected";
-                StatusText = "Connected to daemon";
+                StatusText = "Connected to engine";
             });
-            _logger.LogInformation("Controller initialized and connected to daemon");
+            _logger.LogInformation("Controller initialized and connected to engine");
         }
         catch (Exception ex)
         {
             _dispatcher.BeginInvoke(() =>
             {
                 IsConnected = false;
-                ConnectionStatus = "Daemon not running";
-                StatusText = "Cannot connect to daemon";
+                ConnectionStatus = "Engine not running";
+                StatusText = "Cannot connect to engine";
                 StatusColor = "#F44336";
             });
-            _logger.LogWarning(ex, "Failed to connect to daemon on startup");
+            _logger.LogWarning(ex, "Failed to connect to engine on startup");
         }
     }
 
-    private void OnDaemonMessage(IpcMessage msg)
+    private void OnEngineMessage(IpcMessage msg)
     {
         switch (msg)
         {
@@ -226,19 +226,19 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
             case SettingsChangedMessage:
                 _dispatcher.BeginInvoke(() =>
                 {
-                    _logger.LogInformation("Settings changed notification from daemon");
+                    _logger.LogInformation("Settings changed notification from engine");
                 });
                 break;
         }
     }
 
-    private void OnDaemonDisconnected(object? sender, EventArgs e)
+    private void OnEngineDisconnected(object? sender, EventArgs e)
     {
         _dispatcher.BeginInvoke(() =>
         {
             IsConnected = false;
             ConnectionStatus = "Disconnected";
-            StatusText = "Lost connection to daemon";
+            StatusText = "Lost connection to engine";
             StatusColor = "#F44336";
             IsListening = false;
         });
@@ -250,9 +250,9 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         try
         {
             if (IsListening)
-                await _daemon.SendCommandAsync(new StopListeningMessage());
+                await _engine.SendCommandAsync(new StopListeningMessage());
             else
-                await _daemon.SendCommandAsync(new StartListeningMessage());
+                await _engine.SendCommandAsync(new StartListeningMessage());
         }
         catch (Exception ex)
         {
@@ -270,7 +270,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         };
         try
         {
-            await _daemon.SendCommandAsync(new SetModeMessage { Mode = nextMode });
+            await _engine.SendCommandAsync(new SetModeMessage { Mode = nextMode });
         }
         catch (Exception ex)
         {
@@ -283,7 +283,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
     {
         try
         {
-            await _daemon.SendCommandAsync(new GetHistoryMessage { Limit = 20 });
+            await _engine.SendCommandAsync(new GetHistoryMessage { Limit = 20 });
         }
         catch (Exception ex)
         {
@@ -294,12 +294,12 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task Reconnect()
     {
-        if (_daemon.IsConnected) return;
+        if (_engine.IsConnected) return;
 
         try
         {
-            await _daemon.ConnectAsync();
-            _daemon.SubscribeToUpdates(OnDaemonMessage);
+            await _engine.ConnectAsync();
+            _engine.SubscribeToUpdates(OnEngineMessage);
             _dispatcher.BeginInvoke(() =>
             {
                 IsConnected = true;
@@ -319,8 +319,8 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         SaveSettings();
-        _daemon.Disconnected -= OnDaemonDisconnected;
-        _daemon.Dispose();
+        _engine.Disconnected -= OnEngineDisconnected;
+        _engine.Dispose();
         GC.SuppressFinalize(this);
     }
 }

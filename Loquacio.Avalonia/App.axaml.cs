@@ -15,7 +15,7 @@ public class App : Application
     private IServiceProvider? _services;
     private TrayService? _trayService;
     private ControllerViewModel? _vm;
-    private IDaemonLifecycleService? _daemonLifecycle;
+    private IEngineLifecycleService? _engineLifecycle;
 
     public override void Initialize()
     {
@@ -27,7 +27,7 @@ public class App : Application
         _services = ConfigureServices();
         _vm = _services.GetRequiredService<ControllerViewModel>();
         _trayService = _services.GetRequiredService<TrayService>();
-        _daemonLifecycle = _services.GetRequiredService<IDaemonLifecycleService>();
+        _engineLifecycle = _services.GetRequiredService<IEngineLifecycleService>();
 
         // Load persisted settings before showing window
         _vm.LoadSettings();
@@ -66,7 +66,7 @@ public class App : Application
                 {
                     _vm.SaveSettings();
                     _vm.Dispose();
-                    _daemonLifecycle.Dispose();
+                    _engineLifecycle.Dispose();
                     _trayService.Dispose();
                     desktop.Shutdown();
                 });
@@ -78,22 +78,22 @@ public class App : Application
                     _trayService.UpdateListeningState(_vm.IsListening);
             };
 
-            // Start daemon lifecycle: ensure daemon is running, then connect
+            // Start engine lifecycle: ensure engine is running, then connect
             _ = Task.Run(async () =>
             {
-                await _vm.InitializeAsync(_daemonLifecycle);
+                await _vm.InitializeAsync(_engineLifecycle);
 
                 // Start health monitoring after initial connection
-                if (_daemonLifecycle.State == DaemonState.Running)
+                if (_engineLifecycle.State == EngineState.Running)
                 {
-                    _daemonLifecycle.StartHealthMonitoring();
+                    _engineLifecycle.StartHealthMonitoring();
 
-                    // When daemon health check fails, update UI
-                    _daemonLifecycle.HealthCheckFailed += (_, _) =>
+                    // When engine health check fails, update UI
+                    _engineLifecycle.HealthCheckFailed += (_, _) =>
                     {
                         Dispatcher.UIThread.Post(() =>
                         {
-                            _vm.ConnectionStatus = "Daemon unhealthy";
+                            _vm.ConnectionStatus = "Engine unhealthy";
                             _vm.StatusText = "Reconnecting…";
                         });
                     };
@@ -115,7 +115,7 @@ public class App : Application
         }).SetMinimumLevel(LogLevel.Debug));
 
         // IPC
-        services.AddSingleton<IDaemonProxy, DaemonProxy>();
+        services.AddSingleton<IEngineProxy, EngineProxy>();
 
         // Dispatcher
         services.AddSingleton<IDispatcherService, AvaloniaDispatcherService>();
@@ -126,8 +126,8 @@ public class App : Application
         // System tray
         services.AddSingleton<TrayService>();
 
-        // Daemon lifecycle management
-        services.AddSingleton<IDaemonLifecycleService, DaemonLifecycleService>();
+        // Engine lifecycle management
+        services.AddSingleton<IEngineLifecycleService, EngineLifecycleService>();
 
         // Linux platform services (auto-selects between real and null implementation)
         if (OperatingSystem.IsLinux())

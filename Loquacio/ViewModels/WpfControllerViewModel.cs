@@ -10,18 +10,18 @@ namespace Loquacio.ViewModels;
 
 /// <summary>
 /// Main ViewModel for the WPF controller.
-/// Connects to the daemon via IPC and displays status, transcriptions, and settings.
-/// Does NOT own the audio/whisper pipeline — that lives in the daemon.
+/// Connects to the engine via IPC and displays status, transcriptions, and settings.
+/// Does NOT own the audio/whisper pipeline — that lives in the engine.
 /// This replaces the old <see cref="MainWindowViewModel"/> which directly owned services.
 /// </summary>
 public partial class WpfControllerViewModel : ObservableObject, IDisposable
 {
-    private readonly IDaemonProxy _daemon;
+    private readonly IEngineProxy _engine;
     private readonly IDispatcherService _dispatcher;
     private readonly WpfSettingsPersistenceService _settings;
-    private readonly ISettingsService _daemonSettingsService;
-    private readonly WpfDaemonLifecycleService? _lifecycle;
-    private readonly Loquacio.Daemon.Services.InProcessDaemonHost? _inProcessDaemonHost;
+    private readonly ISettingsService _engineSettingsService;
+    private readonly WpfEngineLifecycleService? _lifecycle;
+    private readonly Loquacio.Engine.Services.InProcessEngineHost? _inProcessEngineHost;
     private readonly ITrayIconService _trayIcon;
     private readonly IAutoStartService? _autoStart;
     private readonly ILogger<WpfControllerViewModel> _logger;
@@ -63,13 +63,13 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     private bool _closeToTray = true;
 
     [ObservableProperty]
-    private string _daemonStateText = "Unknown";
+    private string _engineStateText = "Unknown";
 
     [ObservableProperty]
-    private bool _autoStartDaemon = true;
+    private bool _autoStartEngine = true;
 
     [ObservableProperty]
-    private bool _inProcessDaemon;
+    private bool _inProcessEngine;
 
     [ObservableProperty]
     private bool _startMinimized;
@@ -81,7 +81,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     partial void OnMinimizeToTrayChanged(bool value) => SaveSettings();
     partial void OnCloseToTrayChanged(bool value) => SaveSettings();
     partial void OnStartMinimizedChanged(bool value) => SaveSettings();
-    partial void OnAutoStartDaemonChanged(bool value) => SaveSettings();
+    partial void OnAutoStartEngineChanged(bool value) => SaveSettings();
 
     partial void OnStartWithWindowsChanged(bool value)
     {
@@ -111,11 +111,11 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         SaveSettings();
     }
 
-    /// <summary>⚠ banner: true when no Whisper model is configured on the daemon.</summary>
+    /// <summary>⚠ banner: true when no Whisper model is configured on the engine.</summary>
     [ObservableProperty]
     private bool _noModelConfigured = true;
 
-    /// <summary>Tab ViewModels for daemon-backed settings (Audio/Whisper/Activation).</summary>
+    /// <summary>Tab ViewModels for engine-backed settings (Audio/Whisper/Activation).</summary>
     [ObservableProperty]
     private AudioTabViewModel? _audioSettings;
 
@@ -136,7 +136,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
 
     /// <summary>
     /// Attach the settings-tab ViewModels and wire their save events so changes
-    /// round-trip to the daemon via IPC (settings actually take effect there).
+    /// round-trip to the engine via IPC (settings actually take effect there).
     /// </summary>
     public void AttachSettingsViewModels(
         AudioTabViewModel audio,
@@ -171,10 +171,10 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         try
         {
             // The tab VM already persisted to the local settings store; push the
-            // same settings to the daemon so they take effect there immediately.
-            if (_daemon is DaemonProxy proxy && proxy.IsConnected)
+            // same settings to the engine so they take effect there immediately.
+            if (_engine is EngineProxy proxy && proxy.IsConnected)
             {
-                var settings = await _daemonSettingsService.GetSettingsAsync();
+                var settings = await _engineSettingsService.GetSettingsAsync();
                 var (section, value) = sender switch
                 {
                     AudioTabViewModel => ("audio", (object)settings.Audio),
@@ -188,14 +188,14 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                     ? await proxy.UpdateSettingsAsync(settings)
                     : await proxy.UpdateSettingsSectionAsync(section, value!);
                 if (!ack.Success)
-                    _logger.LogWarning("Daemon rejected settings update: {Error}", ack.Error);
+                    _logger.LogWarning("Engine rejected settings update: {Error}", ack.Error);
                 else if (section == "whisper")
                     RefreshModelStatus(settings);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to push settings to daemon");
+            _logger.LogWarning(ex, "Failed to push settings to engine");
         }
     }
 
@@ -209,28 +209,28 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     public ObservableCollection<TranscriptionResult> TranscriptionHistory { get; } = [];
 
     public WpfControllerViewModel(
-        IDaemonProxy daemon,
+        IEngineProxy engine,
         IDispatcherService dispatcher,
         WpfSettingsPersistenceService settings,
         ITrayIconService trayIcon,
         ILogger<WpfControllerViewModel> logger,
-        WpfDaemonLifecycleService? lifecycle = null,
-        Loquacio.Daemon.Services.InProcessDaemonHost? inProcessDaemon = null,
-        ISettingsService? daemonSettingsService = null,
+        WpfEngineLifecycleService? lifecycle = null,
+        Loquacio.Engine.Services.InProcessEngineHost? inProcessEngine = null,
+        ISettingsService? engineSettingsService = null,
         IAutoStartService? autoStart = null)
     {
-        _daemon = daemon;
+        _engine = engine;
         _dispatcher = dispatcher;
         _settings = settings;
         _trayIcon = trayIcon;
         _autoStart = autoStart;
         _logger = logger;
         _lifecycle = lifecycle;
-        _inProcessDaemonHost = inProcessDaemon;
-        _daemonSettingsService = daemonSettingsService ?? new SettingsService(NullLoggerFactory.Instance.CreateLogger<SettingsService>());
+        _inProcessEngineHost = inProcessEngine;
+        _engineSettingsService = engineSettingsService ?? new SettingsService(NullLoggerFactory.Instance.CreateLogger<SettingsService>());
         _startWithWindows = autoStart is not null && autoStart.IsEnabled;
 
-        _daemon.Disconnected += OnDaemonDisconnected;
+        _engine.Disconnected += OnEngineDisconnected;
     }
 
     public void LoadSettings()
@@ -241,8 +241,8 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         MinimizeToTray = s.MinimizeToTray;
         CloseToTray = s.CloseToTray;
         StartMinimized = s.StartMinimized;
-        AutoStartDaemon = s.AutoStartDaemon;
-        InProcessDaemon = s.InProcessDaemon;
+        AutoStartEngine = s.AutoStartEngine;
+        InProcessEngine = s.InProcessEngine;
         ThemeMode = s.ThemeMode;
 
         _logger.LogInformation("Settings loaded from persistence");
@@ -255,8 +255,8 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
             MinimizeToTray = MinimizeToTray,
             CloseToTray = CloseToTray,
             StartMinimized = StartMinimized,
-            AutoStartDaemon = AutoStartDaemon,
-            InProcessDaemon = InProcessDaemon,
+            AutoStartEngine = AutoStartEngine,
+            InProcessEngine = InProcessEngine,
             ThemeMode = ThemeMode,
         };
         _settings.Save(s);
@@ -267,19 +267,19 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         if (_initialized) return;
         _initialized = true;
 
-        // Optionally ensure daemon is running before connecting
-        if (AutoStartDaemon && _inProcessDaemonHost != null && InProcessDaemon)
+        // Optionally ensure engine is running before connecting
+        if (AutoStartEngine && _inProcessEngineHost != null && InProcessEngine)
         {
-            // In-process mode: host the daemon inside this process, unless an
-            // external daemon is already serving the IPC endpoint.
-            var externalRunning = _lifecycle != null && await _lifecycle.IsDaemonRunningAsync();
+            // In-process mode: host the engine inside this process, unless an
+            // external engine is already serving the IPC endpoint.
+            var externalRunning = _lifecycle != null && await _lifecycle.IsEngineRunningAsync();
             if (!externalRunning)
             {
                 try
                 {
-                    await _inProcessDaemonHost.StartAsync();
-                    DaemonStateText = "Running";
-                    _logger.LogInformation("In-process background service started ({Endpoint})", _inProcessDaemonHost.Endpoint);
+                    await _inProcessEngineHost.StartAsync();
+                    EngineStateText = "Running";
+                    _logger.LogInformation("In-process background service started ({Endpoint})", _inProcessEngineHost.Endpoint);
                 }
                 catch (Exception ex)
                 {
@@ -297,16 +297,16 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
             }
             else
             {
-                DaemonStateText = "Running";
+                EngineStateText = "Running";
             }
         }
-        else if (_lifecycle != null && AutoStartDaemon)
+        else if (_lifecycle != null && AutoStartEngine)
         {
-            DaemonStateText = DescribeServiceState(_lifecycle.State.ToString());
+            EngineStateText = DescribeServiceState(_lifecycle.State.ToString());
             _lifecycle.StateChanged += (_, state) =>
-                _dispatcher.BeginInvoke(() => DaemonStateText = DescribeServiceState(state.ToString()));
+                _dispatcher.BeginInvoke(() => EngineStateText = DescribeServiceState(state.ToString()));
 
-            var started = await _lifecycle.EnsureDaemonRunningAsync();
+            var started = await _lifecycle.EnsureEngineRunningAsync();
             if (!started)
             {
                 _dispatcher.BeginInvoke(() =>
@@ -323,8 +323,8 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
 
         try
         {
-            await _daemon.ConnectAsync();
-            _daemon.SubscribeToUpdates(OnDaemonMessage);
+            await _engine.ConnectAsync();
+            _engine.SubscribeToUpdates(OnEngineMessage);
             _dispatcher.BeginInvoke(() =>
             {
                 IsConnected = true;
@@ -334,35 +334,35 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                 _trayIcon.UpdateState(TrayIconState.Idle);
             });
 
-            // Reflect daemon-side model status in the dashboard banner
-            if (_daemon is DaemonProxy p && p.IsConnected)
+            // Reflect engine-side model status in the dashboard banner
+            if (_engine is EngineProxy p && p.IsConnected)
             {
                 var snapshot = await p.GetSettingsAsync();
-                var localSettings = await _daemonSettingsService.GetSettingsAsync();
+                var localSettings = await _engineSettingsService.GetSettingsAsync();
                 if (!string.IsNullOrWhiteSpace(localSettings.Whisper.ModelPath)
                     && !string.Equals(localSettings.Whisper.ModelPath,
                         snapshot?.Whisper.ModelPath, StringComparison.OrdinalIgnoreCase))
                 {
                     var ack = await p.UpdateSettingsSectionAsync("whisper", localSettings.Whisper);
                     if (!ack.Success)
-                        _logger.LogWarning("Failed to synchronize model settings with daemon: {Error}", ack.Error);
+                        _logger.LogWarning("Failed to synchronize model settings with engine: {Error}", ack.Error);
                     else
                         snapshot = await p.GetSettingsAsync();
                 }
                 if (snapshot is not null)
                 {
                     RefreshModelStatus(snapshot);
-                    // Sync the mode drop-down with the daemon's persisted mode on connect
-                    ActivationSettings?.ApplyDaemonMode(snapshot.Activation.Mode);
+                    // Sync the mode drop-down with the engine's persisted mode on connect
+                    ActivationSettings?.ApplyEngineMode(snapshot.Activation.Mode);
                 }
             }
 
-            // Start health monitoring if lifecycle service is available (external daemon mode only;
-            // in-process mode is supervised directly by RestartDaemon/Dispose)
-            if (!InProcessDaemon)
+            // Start health monitoring if lifecycle service is available (external engine mode only;
+            // in-process mode is supervised directly by RestartEngine/Dispose)
+            if (!InProcessEngine)
                 _lifecycle?.StartHealthMonitoring();
 
-            _logger.LogInformation("Controller initialized and connected to daemon");
+            _logger.LogInformation("Controller initialized and connected to engine");
         }
         catch (Exception ex)
         {
@@ -378,7 +378,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void OnDaemonMessage(IpcMessage msg)
+    private void OnEngineMessage(IpcMessage msg)
     {
         switch (msg)
         {
@@ -394,7 +394,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                         _ => "Continuous",
                     };
                     // Keep the Activation & Hotkeys drop-down in sync with the live mode
-                    ActivationSettings?.ApplyDaemonMode(s.Mode switch
+                    ActivationSettings?.ApplyEngineMode(s.Mode switch
                     {
                         ActivationMode.PushToTalk => "push-to-talk",
                         _ => "continuous",
@@ -410,7 +410,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                         AudioSettings.PeakAudioLevel = s.PeakAudioLevel;
                     }
 
-                    // Update tray icon to reflect daemon state
+                    // Update tray icon to reflect engine state
                     _trayIcon.UpdateState(s.IsListening ? TrayIconState.Listening : TrayIconState.Idle);
                     _trayIcon.UpdateTooltip($"Loquacio - {(s.IsListening ? "Listening" : "Idle")}");
                 });
@@ -436,13 +436,13 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
             case SettingsChangedMessage:
                 _dispatcher.BeginInvoke(() =>
                 {
-                    _logger.LogInformation("Settings changed notification from daemon");
+                    _logger.LogInformation("Settings changed notification from engine");
                 });
                 break;
         }
     }
 
-    private void OnDaemonDisconnected(object? sender, EventArgs e)
+    private void OnEngineDisconnected(object? sender, EventArgs e)
     {
         _dispatcher.BeginInvoke(() =>
         {
@@ -462,13 +462,13 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         {
             if (IsListening)
             {
-                var ack = await _daemon.SendCommandAsync(new StopListeningMessage());
+                var ack = await _engine.SendCommandAsync(new StopListeningMessage());
                 if (!ack.Success)
                     ShowCommandError(ack.Error ?? "Failed to stop listening");
             }
             else
             {
-                var ack = await _daemon.SendCommandAsync(new StartListeningMessage());
+                var ack = await _engine.SendCommandAsync(new StartListeningMessage());
                 if (!ack.Success)
                     ShowCommandError(ack.Error ?? "Failed to start listening");
             }
@@ -492,14 +492,14 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
 
     partial void OnCurrentModeChanged(string value)
     {
-        // Keep the dashboard toggle switch in sync with the daemon-reported mode
+        // Keep the dashboard toggle switch in sync with the engine-reported mode
         var isPtt = value == "Push-to-Talk";
         if (IsPushToTalk != isPtt) IsPushToTalk = isPtt;
     }
 
     partial void OnIsPushToTalkChanged(bool value)
     {
-        if (!IsConnected) return; // daemon will confirm the mode via status updates
+        if (!IsConnected) return; // engine will confirm the mode via status updates
         _ = SetModeAsync(value);
     }
 
@@ -507,7 +507,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     {
         try
         {
-            await _daemon.SendCommandAsync(new SetModeMessage
+            await _engine.SendCommandAsync(new SetModeMessage
             {
                 Mode = pushToTalk ? ActivationMode.PushToTalk : ActivationMode.Continuous
             });
@@ -521,12 +521,12 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task Reconnect()
     {
-        if (_daemon.IsConnected) return;
+        if (_engine.IsConnected) return;
 
         try
         {
-            await _daemon.ConnectAsync();
-            _daemon.SubscribeToUpdates(OnDaemonMessage);
+            await _engine.ConnectAsync();
+            _engine.SubscribeToUpdates(OnEngineMessage);
             _dispatcher.BeginInvoke(() =>
             {
                 IsConnected = true;
@@ -542,21 +542,21 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task RestartDaemon()
+    private async Task RestartEngine()
     {
-        // In-process mode: restart the hosted daemon
-        if (InProcessDaemon && _inProcessDaemonHost != null)
+        // In-process mode: restart the hosted engine
+        if (InProcessEngine && _inProcessEngineHost != null)
         {
             try
             {
-                await _inProcessDaemonHost.StopAsync();
-                await _inProcessDaemonHost.StartAsync();
-                DaemonStateText = "Running";
+                await _inProcessEngineHost.StopAsync();
+                await _inProcessEngineHost.StartAsync();
+                EngineStateText = "Running";
                 await Reconnect();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to restart in-process daemon");
+                _logger.LogError(ex, "Failed to restart in-process engine");
             }
             return;
         }
@@ -565,11 +565,11 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
 
         try
         {
-            var success = await _lifecycle.RestartDaemonAsync();
+            var success = await _lifecycle.RestartEngineAsync();
             if (success)
             {
-                await _daemon.ConnectAsync();
-                _daemon.SubscribeToUpdates(OnDaemonMessage);
+                await _engine.ConnectAsync();
+                _engine.SubscribeToUpdates(OnEngineMessage);
                 _dispatcher.BeginInvoke(() =>
                 {
                     IsConnected = true;
@@ -581,7 +581,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to restart daemon");
+            _logger.LogError(ex, "Failed to restart engine");
         }
     }
 
@@ -601,16 +601,16 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task ShutdownAsync()
     {
-        if (_inProcessDaemonHost is { IsRunning: true })
+        if (_inProcessEngineHost is { IsRunning: true })
         {
-            try { await _inProcessDaemonHost.StopAsync(); }
+            try { await _inProcessEngineHost.StopAsync(); }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to stop in-process background service"); }
             return;
         }
 
         if (_lifecycle is not null)
         {
-            try { await _lifecycle.StopDaemonAsync(); }
+            try { await _lifecycle.StopEngineAsync(); }
             catch (Exception ex) { _logger.LogWarning(ex, "Failed to stop background service on exit"); }
         }
     }
@@ -620,18 +620,18 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         SaveSettings();
-        _daemon.Disconnected -= OnDaemonDisconnected;
+        _engine.Disconnected -= OnEngineDisconnected;
         if (AudioSettings is not null) AudioSettings.SettingsSaved -= OnSettingsSaved;
         if (WhisperSettings is not null) WhisperSettings.SettingsSaved -= OnSettingsSaved;
         if (ActivationSettings is not null) ActivationSettings.SettingsSaved -= OnSettingsSaved;
         if (VocabularySettings is not null) VocabularySettings.SettingsSaved -= OnSettingsSaved;
         if (LlmSettings is not null) LlmSettings.SettingsSaved -= OnSettingsSaved;
         _lifecycle?.Dispose();
-        if (_inProcessDaemonHost is { IsRunning: true })
+        if (_inProcessEngineHost is { IsRunning: true })
         {
-            _ = _inProcessDaemonHost.StopAsync();
+            _ = _inProcessEngineHost.StopAsync();
         }
-        _daemon.Dispose();
+        _engine.Dispose();
         GC.SuppressFinalize(this);
     }
 }

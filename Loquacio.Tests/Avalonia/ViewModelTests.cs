@@ -11,7 +11,7 @@ namespace Loquacio.Avalonia.Tests;
 
 public class ControllerViewModelTests : IDisposable
 {
-    private readonly IDaemonProxy _daemon = Substitute.For<IDaemonProxy>();
+    private readonly IEngineProxy _engine = Substitute.For<IEngineProxy>();
     private readonly IDispatcherService _dispatcher = Substitute.For<IDispatcherService>();
     private readonly SettingsPersistenceService _settings;
     private readonly ILogger<ControllerViewModel> _logger = Substitute.For<ILogger<ControllerViewModel>>();
@@ -27,12 +27,12 @@ public class ControllerViewModelTests : IDisposable
         _settings = new SettingsPersistenceService(
             Substitute.For<ILogger<SettingsPersistenceService>>(), _tempSettingsPath);
 
-        _daemon.IsConnected.Returns(true);
-        _daemon.SendCommandAsync(Arg.Any<IpcMessage>())
+        _engine.IsConnected.Returns(true);
+        _engine.SendCommandAsync(Arg.Any<IpcMessage>())
             .ReturnsForAnyArgs(Task.FromResult(_ack));
 
         _vm = new ControllerViewModel(
-            _daemon, _dispatcher,
+            _engine, _dispatcher,
             new GeneralSettingsViewModel(),
             new AudioSettingsViewModel(),
             new WhisperSettingsViewModel(),
@@ -52,11 +52,11 @@ public class ControllerViewModelTests : IDisposable
     {
         // First call should connect
         await _vm.InitializeAsync();
-        await _daemon.Received(1).ConnectAsync();
+        await _engine.Received(1).ConnectAsync();
 
         // Second call should be a no-op
         await _vm.InitializeAsync();
-        await _daemon.Received(1).ConnectAsync(); // Still exactly 1, not 2
+        await _engine.Received(1).ConnectAsync(); // Still exactly 1, not 2
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class ControllerViewModelTests : IDisposable
     {
         _vm.IsListening = false;
         await _vm.ToggleListeningCommand.ExecuteAsync(null);
-        await _daemon.Received(1).SendCommandAsync(Arg.Any<StartListeningMessage>());
+        await _engine.Received(1).SendCommandAsync(Arg.Any<StartListeningMessage>());
     }
 
     [Fact]
@@ -79,16 +79,16 @@ public class ControllerViewModelTests : IDisposable
     {
         _vm.IsListening = true;
         await _vm.ToggleListeningCommand.ExecuteAsync(null);
-        await _daemon.Received(1).SendCommandAsync(Arg.Any<StopListeningMessage>());
+        await _engine.Received(1).SendCommandAsync(Arg.Any<StopListeningMessage>());
     }
 
     [Fact]
     public async Task ToggleListening_WhenNotConnected_StillSendsCommand()
     {
-        _daemon.IsConnected.Returns(false);
+        _engine.IsConnected.Returns(false);
         _vm.IsListening = false;
         await _vm.ToggleListeningCommand.ExecuteAsync(null);
-        await _daemon.Received(1).SendCommandAsync(Arg.Any<StartListeningMessage>());
+        await _engine.Received(1).SendCommandAsync(Arg.Any<StartListeningMessage>());
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class ControllerViewModelTests : IDisposable
         var newSettings = new SettingsPersistenceService(
             Substitute.For<ILogger<SettingsPersistenceService>>(), _tempSettingsPath);
         var newVm = new ControllerViewModel(
-            _daemon, _dispatcher,
+            _engine, _dispatcher,
             new GeneralSettingsViewModel(),
             new AudioSettingsViewModel(),
             new WhisperSettingsViewModel(),

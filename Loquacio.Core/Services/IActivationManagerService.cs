@@ -12,7 +12,7 @@ public enum ActivationMode
     /// <summary>
     /// App listens only after keyword detection, until silence or timeout.
     /// DISABLED: no working keyword recognizer exists yet (the energy-based
-    /// spotter could not tell words apart). The daemon refuses to enter this
+    /// spotter could not tell words apart). The engine refuses to enter this
     /// mode; it stays in the enum for IPC/back-compat until real wake-word
     /// detection (e.g. Porcupine) is implemented.
     /// </summary>
@@ -42,7 +42,7 @@ public interface IActivationManagerService : IDisposable
     /// <summary>
     /// Re-apply activation settings (keyword detection) from the settings store.
     /// Called after settings updates via IPC. Hotkeys are re-registered separately
-    /// by the daemon's HotkeyManager.
+    /// by the engine's HotkeyManager.
     /// </summary>
     Task ApplyActivationSettingsAsync(CancellationToken ct = default);
     Task ShutdownAsync();

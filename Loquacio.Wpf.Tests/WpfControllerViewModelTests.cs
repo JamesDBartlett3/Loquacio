@@ -4,7 +4,7 @@ namespace Loquacio.Wpf.Tests;
 
 public class WpfControllerViewModelTests
 {
-    private readonly IDaemonProxy _daemon;
+    private readonly IEngineProxy _engine;
     private readonly IDispatcherService _dispatcher;
     private readonly WpfSettingsPersistenceService _settings;
     private readonly ITrayIconService _trayIcon;
@@ -12,7 +12,7 @@ public class WpfControllerViewModelTests
 
     public WpfControllerViewModelTests()
     {
-        _daemon = Substitute.For<IDaemonProxy>();
+        _engine = Substitute.For<IEngineProxy>();
         _dispatcher = Substitute.For<IDispatcherService>();
 
         // Use a real temp file for settings so Load/Save actually work
@@ -25,11 +25,11 @@ public class WpfControllerViewModelTests
     }
 
     [Fact]
-    public void Constructor_SubscribesToDaemonDisconnected()
+    public void Constructor_SubscribesToEngineDisconnected()
     {
         var vm = CreateViewModel();
 
-        _daemon.Received(1).Disconnected += Arg.Any<EventHandler>();
+        _engine.Received(1).Disconnected += Arg.Any<EventHandler>();
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public class WpfControllerViewModelTests
 
         Assert.True(vm.MinimizeToTray); // default
         Assert.True(vm.CloseToTray); // default
-        Assert.True(vm.AutoStartDaemon); // default
+        Assert.True(vm.AutoStartEngine); // default
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class WpfControllerViewModelTests
         var vm = CreateViewModel();
         vm.MinimizeToTray = false;
         vm.CloseToTray = false;
-        vm.AutoStartDaemon = false;
+        vm.AutoStartEngine = false;
 
         vm.SaveSettings();
 
@@ -68,7 +68,7 @@ public class WpfControllerViewModelTests
         Assert.NotNull(loaded);
         Assert.False(loaded!.MinimizeToTray);
         Assert.False(loaded.CloseToTray);
-        Assert.False(loaded.AutoStartDaemon);
+        Assert.False(loaded.AutoStartEngine);
     }
 
     [Fact]
@@ -78,8 +78,8 @@ public class WpfControllerViewModelTests
 
         vm.Dispose();
 
-        _daemon.Received(1).Disconnected -= Arg.Any<EventHandler>();
-        _daemon.Received(1).Dispose();
+        _engine.Received(1).Disconnected -= Arg.Any<EventHandler>();
+        _engine.Received(1).Dispose();
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class WpfControllerViewModelTests
     {
         // Arrange: ViewModel starts not listening
         var vm = CreateViewModel();
-        _daemon.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
+        _engine.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
             .Returns(new AckMessage { Success = true });
 
         // Set IsListening to false
@@ -108,7 +108,7 @@ public class WpfControllerViewModelTests
         await vm.ToggleListeningCommand.ExecuteAsync(null);
 
         // Assert
-        await _daemon.Received(1).SendCommandAsync(
+        await _engine.Received(1).SendCommandAsync(
             Arg.Is<StartListeningMessage>(m => m.MessageType == "start-listening"),
             Arg.Any<CancellationToken>());
     }
@@ -117,7 +117,7 @@ public class WpfControllerViewModelTests
     public async Task ToggleListening_WhenListening_SendsStopCommand()
     {
         var vm = CreateViewModel();
-        _daemon.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
+        _engine.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
             .Returns(new AckMessage { Success = true });
 
         typeof(WpfControllerViewModel)
@@ -126,7 +126,7 @@ public class WpfControllerViewModelTests
 
         await vm.ToggleListeningCommand.ExecuteAsync(null);
 
-        await _daemon.Received(1).SendCommandAsync(
+        await _engine.Received(1).SendCommandAsync(
             Arg.Is<StopListeningMessage>(m => m.MessageType == "stop-listening"),
             Arg.Any<CancellationToken>());
     }
@@ -137,12 +137,12 @@ public class WpfControllerViewModelTests
         var vm = CreateViewModel();
         vm.IsConnected = true;
         vm.CurrentMode = "Continuous";
-        _daemon.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
+        _engine.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
             .Returns(new AckMessage { Success = true });
 
         vm.IsPushToTalk = true;
 
-        await _daemon.Received(1).SendCommandAsync(
+        await _engine.Received(1).SendCommandAsync(
             Arg.Is<SetModeMessage>(m => m.Mode == ActivationMode.PushToTalk),
             Arg.Any<CancellationToken>());
     }
@@ -153,12 +153,12 @@ public class WpfControllerViewModelTests
         var vm = CreateViewModel();
         vm.IsConnected = true;
         vm.CurrentMode = "Push-to-Talk";
-        _daemon.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
+        _engine.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
             .Returns(new AckMessage { Success = true });
 
         vm.IsPushToTalk = false;
 
-        await _daemon.Received(1).SendCommandAsync(
+        await _engine.Received(1).SendCommandAsync(
             Arg.Is<SetModeMessage>(m => m.Mode == ActivationMode.Continuous),
             Arg.Any<CancellationToken>());
     }
@@ -166,7 +166,7 @@ public class WpfControllerViewModelTests
     [Fact]
     public void CurrentModeChange_SyncsModeSwitch()
     {
-        // The daemon reports the mode via status updates; the switch follows.
+        // The engine reports the mode via status updates; the switch follows.
         var vm = CreateViewModel();
 
         vm.CurrentMode = "Push-to-Talk";
@@ -183,14 +183,14 @@ public class WpfControllerViewModelTests
 
         vm.IsPushToTalk = true;
 
-        _daemon.DidNotReceive().SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>());
+        _engine.DidNotReceive().SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ToggleListening_WhenDaemonThrows_LogsError()
+    public async Task ToggleListening_WhenEngineThrows_LogsError()
     {
         var vm = CreateViewModel();
-        _daemon.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
+        _engine.SendCommandAsync(Arg.Any<IpcMessage>(), Arg.Any<CancellationToken>())
             .Returns<AckMessage>(_ => throw new InvalidOperationException("connection lost"));
 
         // Should not throw
@@ -200,7 +200,7 @@ public class WpfControllerViewModelTests
     private WpfControllerViewModel CreateViewModel()
     {
         return new WpfControllerViewModel(
-            _daemon,
+            _engine,
             _dispatcher,
             _settings,
             _trayIcon,

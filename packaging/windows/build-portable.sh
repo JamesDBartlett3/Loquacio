@@ -36,7 +36,7 @@ NUGET_VERSION="${BASE#v}+$(git rev-parse --short HEAD)"
 echo "Building Windows portable package version $VERSION..."
 
 PROJECTS=(
-  Loquacio.Daemon/Loquacio.Daemon.csproj
+  Loquacio.Engine/Loquacio.Engine.csproj
   Loquacio.Tui/Loquacio.Tui.csproj
   Loquacio/Loquacio.csproj
 )
@@ -56,7 +56,7 @@ if [[ "$SKIP_PUBLISH" != true ]]; then
   echo "Publish complete: $PUBLISH"
 fi
 
-[[ -f "$PUBLISH/loquacio-daemon.exe" ]] || { echo "ERROR: daemon exe missing from publish output" >&2; exit 1; }
+[[ -f "$PUBLISH/loquacio-engine.exe" ]] || { echo "ERROR: engine exe missing from publish output" >&2; exit 1; }
 
 # ---- Stage portable layout ----
 STAGE="$DIST/stage-win/$APP"
@@ -71,7 +71,7 @@ Loquacio - Portable Windows Package ($VERSION)
 
 Contents
 --------
-  loquacio-daemon.exe     Background daemon (audio capture + transcription)
+  loquacio-engine.exe     Background engine (audio capture + transcription)
   loquacio-tui.exe        Terminal UI controller
   Loquacio.exe            WPF GUI controller
   (*.dll, *.json are self-contained .NET 10 runtime files - keep them next to the exes)
@@ -79,18 +79,18 @@ Contents
 Quick Start
 -----------
 1. Extract this ZIP to any folder.
-2. Run loquacio-daemon.exe to start the daemon, then a controller
+2. Run loquacio-engine.exe to start the engine, then a controller
    (Loquacio.exe or loquacio-tui.exe).
 
 Run at Login (Task Scheduler hint)
 ----------------------------------
 Open an elevated Command Prompt in this folder and run:
 
-  schtasks /create /tn "Loquacio Daemon" /tr "%CD%\\loquacio-daemon.exe" /sc onlogon /rl highest /f
+  schtasks /create /tn "Loquacio Engine" /tr "%CD%\\loquacio-engine.exe" /sc onlogon /rl highest /f
 
 Remove it later with:
 
-  schtasks /delete /tn "Loquacio Daemon" /f
+  schtasks /delete /tn "Loquacio Engine" /f
 
 Notes
 -----

@@ -2,7 +2,7 @@
 
 ![Loquacio — local, private voice-to-text dictation](Assets/hero-banner.png)
 
-Local Whisper-powered voice-to-text dictation that runs entirely on your machine — no cloud, no telemetry. A headless daemon owns audio capture and transcription; controllers (Avalonia GUI, TUI, and a Windows WPF app) connect to it over a private IPC socket.
+Local Whisper-powered voice-to-text dictation that runs entirely on your machine — no cloud, no telemetry. A headless engine owns audio capture and transcription; controllers (Avalonia GUI, TUI, and a Windows WPF app) connect to it over a private IPC socket.
 
 ## Features
 
@@ -11,7 +11,7 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 - **Push-to-Talk Mode**: Hold a hotkey to record, release to process
 - **LLM Post-Processing**: Route raw transcription through a local LLM for auto-correction and punctuation
 - **Custom Vocabulary**: Add uncommon words to improve recognition accuracy
-- **Daemon architecture**: start the daemon once and attach any controller; the Avalonia GUI and TUI run on Linux, Windows, and macOS
+- **Engine architecture**: start the engine once and attach any controller; the Avalonia GUI and TUI run on Linux, Windows, and macOS
 - **System Tray Integration**: Minimize to tray, balloon notifications, quick-toggle listening
 - **Auto-Start with Windows**: Optional launch at login
 - **User-Configurable Models**: Download and switch between Whisper model sizes
@@ -21,7 +21,7 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 | Component | Technology |
 |-----------|-----------|
 | Speech Recognition | Whisper.net 1.9.1 |
-| Daemon / TUI / GUI | .NET 10, Avalonia 11.3 (GUI), custom console TUI |
+| Engine / TUI / GUI | .NET 10, Avalonia 11.3 (GUI), custom console TUI |
 | Windows Controller | WPF (.NET 10), MVVM via CommunityToolkit.Mvvm |
 | Audio Capture | WASAPI via NAudio on Windows, PipeWire on Linux |
 | IPC | Private Unix-domain socket (Linux) / named pipe (Windows) |
@@ -30,19 +30,19 @@ Local Whisper-powered voice-to-text dictation that runs entirely on your machine
 
 ## Installation
 
-Download a build from the [releases page](https://github.com/JamesDBartlett3/Loquacio/releases) — all artifacts are self-contained (no .NET runtime required) and include the daemon plus all controllers.
+Download a build from the [releases page](https://github.com/JamesDBartlett3/Loquacio/releases) — all artifacts are self-contained (no .NET runtime required) and include the engine plus all controllers.
 
 ### Linux
 
 | Format | Install |
 |--------|---------|
 | AppImage | `chmod +x loquacio-*-x86_64.AppImage && ./loquacio-*-x86_64.AppImage` |
-| .deb | `sudo dpkg -i loquacio_*_amd64.deb` then `systemctl --user enable --now loquacio-daemon.service` |
+| .deb | `sudo dpkg -i loquacio_*_amd64.deb` then `systemctl --user enable --now loquacio-engine.service` |
 | .tar.gz | `tar -xzf loquacio-*-linux-x64.tar.gz` and run the binaries in place |
 
 ### Windows
 
-- **Portable zip (recommended):** extract `loquacio-*-win-x64-portable.zip` and run `Start Loquacio.bat`; `Install Daemon.bat` (run as administrator) registers the daemon as a scheduled task for auto-start.
+- **Portable zip (recommended):** extract `loquacio-*-win-x64-portable.zip` and run `Start Loquacio.bat`; `Install Engine.bat` (run as administrator) registers the engine as a scheduled task for auto-start.
 - **MSIX:** build locally with `./build-msix.ps1` on a Windows host (requires code signing for sideload).
 
 ### From Source
@@ -68,7 +68,7 @@ The project is structured for cross-platform development:
 | `Loquacio.Shared` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio` | net10.0-windows (WPF) | Any platform* | Windows only |
 | `Loquacio.Avalonia` | net10.0 | Any platform | ✅ Any platform |
-| `Loquacio.Daemon` | net10.0 | Any platform | ✅ Any platform |
+| `Loquacio.Engine` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio.Tui` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio.Tests` | net10.0 | Any platform | ✅ Any platform |
 | `Loquacio.Wpf.Tests` | net10.0-windows | Any platform* | Windows only |
@@ -183,7 +183,7 @@ Loquacio/            # WPF application (net10.0-windows)
 ├── App.xaml                 # Application entry point
 └── MainWindow.xaml          # Main window
 
-Loquacio.Daemon/     # Headless daemon (net10.0)
+Loquacio.Engine/     # Headless engine (net10.0)
 └── Services/Audio/          # WASAPI (Windows), PipeWire (Linux) capture
 
 Loquacio.Avalonia/   # Avalonia GUI controller (net10.0, Linux/Windows/macOS)

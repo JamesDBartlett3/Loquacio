@@ -42,7 +42,7 @@
          so the pin carries the fix. Upgrading to the 0.9x line renames Connection ->
          DBusConnection, which breaks Avalonia 11.x (compiled against the 0.2x API).
          Exposure is low: the app only uses D-Bus as a client via Avalonia desktop
-         integration on the user session bus; the daemon IPC is a private Unix-domain
+         integration on the user session bus; the engine IPC is a private Unix-domain
          socket, and no D-Bus service is published. Attack requires a malicious peer
          already on the same session bus (local, same-user). Re-evaluate only when
          Avalonia ships against the 0.9x API. -->

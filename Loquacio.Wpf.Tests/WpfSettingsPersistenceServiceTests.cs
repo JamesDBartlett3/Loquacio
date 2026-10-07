@@ -53,8 +53,8 @@ public class WpfSettingsPersistenceServiceTests
                 MinimizeToTray = false,
                 CloseToTray = false,
                 StartWithWindows = true,
-                AutoStartDaemon = false,
-                InProcessDaemon = true,
+                AutoStartEngine = false,
+                InProcessEngine = true,
             };
 
             svc.Save(settings);
@@ -81,8 +81,8 @@ public class WpfSettingsPersistenceServiceTests
             Assert.False(loaded.MinimizeToTray);
             Assert.False(loaded.CloseToTray);
             Assert.True(loaded.StartWithWindows);
-            Assert.False(loaded.AutoStartDaemon);
-            Assert.True(loaded.InProcessDaemon);
+            Assert.False(loaded.AutoStartEngine);
+            Assert.True(loaded.InProcessEngine);
         }
         finally
         {
@@ -150,7 +150,7 @@ public class WpfSettingsPersistenceServiceTests
         Assert.Equal("http://localhost:1234/v1", settings.LlmEndpoint);
         Assert.True(settings.MinimizeToTray);
         Assert.True(settings.CloseToTray);
-        Assert.True(settings.AutoStartDaemon);
-        Assert.False(settings.InProcessDaemon);
+        Assert.True(settings.AutoStartEngine);
+        Assert.False(settings.InProcessEngine);
     }
 }

@@ -42,7 +42,7 @@ public partial class WhisperTabViewModel : ObservableObject
     [ObservableProperty]
     private bool _canDeleteSelectedModel;
 
-    /// <summary>Raised after settings are saved, so the host can push them to the daemon via IPC.</summary>
+    /// <summary>Raised after settings are saved, so the host can push them to the engine via IPC.</summary>
     public event EventHandler? SettingsSaved;
 
     /// <summary>True when no Whisper model is configured — drives the dashboard warning banner.</summary>
@@ -227,7 +227,7 @@ public partial class WhisperTabViewModel : ObservableObject
             await _settingsService.SaveSettingsAsync(settings);
 
             DownloadStatus = $"✓ {model.DisplayName} downloaded and ready";
-            SettingsSaved?.Invoke(this, EventArgs.Empty); // model path changed — notify daemon
+            SettingsSaved?.Invoke(this, EventArgs.Empty); // model path changed — notify engine
         }
         catch (OperationCanceledException)
         {

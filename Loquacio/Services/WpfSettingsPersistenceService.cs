@@ -69,7 +69,7 @@ public sealed class WpfSettingsPersistenceService
 /// </summary>
 public sealed class WpfControllerSettings
 {
-    // General — activation mode lives in the daemon's settings.json
+    // General — activation mode lives in the engine's settings.json
     // (Activation.Mode) and is not persisted here.
     public string HotkeyDisplay { get; set; } = "Ctrl+Alt+D";
     public bool KeywordEnabled { get; set; } = true;
@@ -106,7 +106,7 @@ public sealed class WpfControllerSettings
     // Appearance
     public string ThemeMode { get; set; } = "System";
 
-    // Daemon
-    public bool AutoStartDaemon { get; set; } = true;
-    public bool InProcessDaemon { get; set; } = false;
+    // Engine
+    public bool AutoStartEngine { get; set; } = true;
+    public bool InProcessEngine { get; set; } = false;
 }

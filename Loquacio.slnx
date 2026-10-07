@@ -2,7 +2,7 @@
   <Project Path="Loquacio.Core/Loquacio.Core.csproj" />
   <Project Path="CrossPlatformTestConsole/CrossPlatformTestConsole.csproj" />
   <Project Path="TestConsole/TestConsole.csproj" />
-  <Project Path="Loquacio.Daemon/Loquacio.Daemon.csproj" />
+  <Project Path="Loquacio.Engine/Loquacio.Engine.csproj" />
   <Project Path="Loquacio.Shared/Loquacio.Shared.csproj" />
   <Project Path="Loquacio.Tests/Loquacio.Tests.csproj" />
   <Project Path="Loquacio.Tui/Loquacio.Tui.csproj" />

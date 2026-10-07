@@ -4,7 +4,7 @@ namespace Loquacio.Avalonia.ViewModels;
 
 /// <summary>
 /// Vocabulary settings tab for the controller.
-/// Custom words are sent to the daemon for LLM prompt context.
+/// Custom words are sent to the engine for LLM prompt context.
 /// </summary>
 public partial class VocabularySettingsViewModel : ObservableObject
 {

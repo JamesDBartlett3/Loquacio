@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using Loquacio.Daemon.Services;
-using static Loquacio.Daemon.Services.GitHubUpdateService;
+using Loquacio.Engine.Services;
+using static Loquacio.Engine.Services.GitHubUpdateService;
 
 namespace Loquacio.Tests;
 

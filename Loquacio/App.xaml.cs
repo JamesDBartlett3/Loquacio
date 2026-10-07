@@ -13,7 +13,7 @@ public partial class App : Application
     private ITrayIconService? _trayIconService;
     private ISingleInstanceService? _singleInstanceService;
     private WpfControllerViewModel? _controllerViewModel;
-    private WpfDaemonLifecycleService? _daemonLifecycle;
+    private WpfEngineLifecycleService? _engineLifecycle;
 
     public App()
     {
@@ -33,10 +33,10 @@ public partial class App : Application
         _trayIconService.Initialize();
 
         _controllerViewModel = Services.GetRequiredService<WpfControllerViewModel>();
-        _daemonLifecycle = Services.GetService<WpfDaemonLifecycleService>();
+        _engineLifecycle = Services.GetService<WpfEngineLifecycleService>();
 
         // Wire the settings-tab VMs into the controller (tabs bind to these;
-        // saves are pushed to the daemon via IPC)
+        // saves are pushed to the engine via IPC)
         _controllerViewModel.AttachSettingsViewModels(
             Services.GetRequiredService<AudioTabViewModel>(),
             Services.GetRequiredService<WhisperTabViewModel>(),
@@ -61,7 +61,7 @@ public partial class App : Application
             _mainWindow.Show();
         }
 
-        // Initialize daemon connection asynchronously
+        // Initialize engine connection asynchronously
         await _controllerViewModel.InitializeAsync();
     }
 
@@ -69,7 +69,7 @@ public partial class App : Application
     {
         // The UI and the background service launch and quit together. Blocking
         // here on purpose: an async exit handler can be cut short when WPF
-        // finishes shutdown, which would leave the daemon process running.
+        // finishes shutdown, which would leave the engine process running.
         if (_controllerViewModel is not null)
         {
             try { _controllerViewModel.ShutdownAsync().GetAwaiter().GetResult(); }
@@ -94,45 +94,45 @@ public partial class App : Application
         // Dispatcher (WPF implementation)
         services.AddSingleton<IDispatcherService, WpfDispatcherService>();
 
-        // --- Daemon Controller Architecture (Phase C2) ---
-        // The WPF app is now a thin controller that connects to the daemon via IPC.
+        // --- Engine Controller Architecture (Phase C2) ---
+        // The WPF app is now a thin controller that connects to the engine via IPC.
         // It no longer owns the audio/whisper pipeline directly.
 
         // IPC: Auto-detects named pipe (Windows) or Unix socket (Linux)
-        services.AddSingleton<Loquacio.Ipc.IDaemonProxy>(sp =>
-            new Loquacio.Ipc.DaemonProxy(
-                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Loquacio.Ipc.DaemonProxy>>()));
+        services.AddSingleton<Loquacio.Ipc.IEngineProxy>(sp =>
+            new Loquacio.Ipc.EngineProxy(
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Loquacio.Ipc.EngineProxy>>()));
 
-        // Daemon lifecycle management (start, monitor, restart)
-        services.AddSingleton<WpfDaemonLifecycleService>();
+        // Engine lifecycle management (start, monitor, restart)
+        services.AddSingleton<WpfEngineLifecycleService>();
 
-        // In-process daemon option (hosts the daemon inside this process)
-        services.AddSingleton<Loquacio.Daemon.Services.InProcessDaemonHost>();
+        // In-process engine option (hosts the engine inside this process)
+        services.AddSingleton<Loquacio.Engine.Services.InProcessEngineHost>();
 
         // Controller settings persistence
         services.AddSingleton<WpfSettingsPersistenceService>();
 
-        // --- Settings tabs (daemon-backed settings, shared store + IPC push) ---
-        // The controller mirrors the daemon's settings store on the same machine and
-        // pushes changes via IPC update-settings so they take effect in the daemon.
+        // --- Settings tabs (engine-backed settings, shared store + IPC push) ---
+        // The controller mirrors the engine's settings store on the same machine and
+        // pushes changes via IPC update-settings so they take effect in the engine.
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IModelManagerService, ModelManagerService>();
 
-        // Device enumeration only — the daemon owns actual capture. Using WASAPI
-        // enumeration here is read-only and doesn't conflict with the daemon.
+        // Device enumeration only — the engine owns actual capture. Using WASAPI
+        // enumeration here is read-only and doesn't conflict with the engine.
         if (OperatingSystem.IsWindows())
         {
-            services.AddSingleton<IAudioCaptureService, Loquacio.Daemon.Services.Audio.WasapiAudioCaptureService>();
+            services.AddSingleton<IAudioCaptureService, Loquacio.Engine.Services.Audio.WasapiAudioCaptureService>();
         }
         else
         {
-            services.AddSingleton<IAudioCaptureService, Loquacio.Daemon.Services.UnsupportedAudioCaptureService>();
+            services.AddSingleton<IAudioCaptureService, Loquacio.Engine.Services.UnsupportedAudioCaptureService>();
         }
 
-        // Global hotkeys are owned by the daemon's HotkeyManager — the controller
+        // Global hotkeys are owned by the engine's HotkeyManager — the controller
         // must not double-register system hotkeys. This no-op only satisfies the
         // GeneralTabViewModel dependency.
-        services.AddSingleton<IHotkeyService, Loquacio.Daemon.Services.NullHotkeyService>();
+        services.AddSingleton<IHotkeyService, Loquacio.Engine.Services.NullHotkeyService>();
 
         services.AddSingleton<AudioTabViewModel>();
         services.AddSingleton<WhisperTabViewModel>();
@@ -142,7 +142,7 @@ public partial class App : Application
         services.AddSingleton<ILLMPostProcessorService, LLMPostProcessorService>();
         services.AddSingleton<LLMTabViewModel>();
 
-        // Tray icon (wired to daemon commands via ControllerViewModel)
+        // Tray icon (wired to engine commands via ControllerViewModel)
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<ISingleInstanceService, SingleInstanceService>();
 

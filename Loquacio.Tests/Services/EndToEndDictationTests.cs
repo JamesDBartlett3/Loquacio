@@ -6,7 +6,7 @@ namespace Loquacio.Tests.Services;
 
 /// <summary>
 /// End-to-end integration test: real Whisper model + real speech audio through the
-/// actual WhisperProcessorService pipeline (the same code path the daemon uses).
+/// actual WhisperProcessorService pipeline (the same code path the engine uses).
 ///
 /// Gated behind environment variables so CI/fast test runs skip it:
 ///   WHISPER_E2E_MODEL_PATH — path to a ggml Whisper model (e.g. ggml-tiny.bin)

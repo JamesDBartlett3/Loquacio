@@ -36,14 +36,14 @@ public partial class MainWindow : Window
         };
         _trayIconService.ToggleModeRequested += (_, _) =>
         {
-            // Flipping the switch sends SetMode to the daemon, which confirms
+            // Flipping the switch sends SetMode to the engine, which confirms
             // via a status broadcast that re-syncs the menu.
             _viewModel.IsPushToTalk = !_viewModel.IsPushToTalk;
         };
         _trayIconService.ToggleLlmRequested += (_, _) =>
         {
             if (_viewModel.LlmSettings is { } llm)
-                llm.IsLlmEnabled = !llm.IsLlmEnabled; // auto-applies and pushes to the daemon
+                llm.IsLlmEnabled = !llm.IsLlmEnabled; // auto-applies and pushes to the engine
         };
         _trayIconService.ExitRequested += OnTrayExitRequested;
         _trayIconService.SettingsRequested += OnTraySettingsRequested;

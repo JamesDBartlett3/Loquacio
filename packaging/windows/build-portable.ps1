@@ -29,8 +29,8 @@ Write-Host "Building Windows portable package version $Version..."
 # Build the binaries
 if (-not $SkipBuild) {
     Write-Host "Publishing binaries..."
-    dotnet publish Loquacio.Daemon/Loquacio.Daemon.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
-    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing Loquacio.Daemon failed"; exit 1 }
+    dotnet publish Loquacio.Engine/Loquacio.Engine.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
+    if ($LASTEXITCODE -ne 0) { Write-Error "Publishing Loquacio.Engine failed"; exit 1 }
     dotnet publish Loquacio/Loquacio.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
     if ($LASTEXITCODE -ne 0) { Write-Error "Publishing Loquacio (WPF) failed"; exit 1 }
     dotnet publish Loquacio.Tui/Loquacio.Tui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=$NuggetVersion -o $Publish
@@ -59,28 +59,28 @@ start "" "Loquacio.exe"
 # Create Task Scheduler installation script
 @"
 @echo off
-echo Installing Loquacio daemon as scheduled task...
-schtasks /create /tn "Loquacio Daemon" /tr "%~dp0loquacio-daemon.exe" /sc onlogon /rl highest /f
+echo Installing Loquacio engine as scheduled task...
+schtasks /create /tn "Loquacio Engine" /tr "%~dp0loquacio-engine.exe" /sc onlogon /rl highest /f
 if %errorlevel% equ 0 (
-    echo Success! Daemon will start automatically on login.
+    echo Success! Engine will start automatically on login.
 ) else (
     echo Failed to create scheduled task. Run as administrator?
 )
 pause
-"@ | Out-File -FilePath "$Stage\Install Daemon.bat" -Encoding ASCII
+"@ | Out-File -FilePath "$Stage\Install Engine.bat" -Encoding ASCII
 
 # Create uninstallation script
 @"
 @echo off
-echo Uninstalling Loquacio daemon...
-schtasks /delete /tn "Loquacio Daemon" /f
+echo Uninstalling Loquacio engine...
+schtasks /delete /tn "Loquacio Engine" /f
 if %errorlevel% equ 0 (
-    echo Success! Daemon will not start automatically.
+    echo Success! Engine will not start automatically.
 ) else (
     echo Task may not have been installed.
 )
 pause
-"@ | Out-File -FilePath "$Stage\Uninstall Daemon.bat" -Encoding ASCII
+"@ | Out-File -FilePath "$Stage\Uninstall Engine.bat" -Encoding ASCII
 
 # Create README for portable package
 @"
@@ -89,21 +89,21 @@ pause
 ## Quick Start
 
 1. Double-click \`Start Loquacio.bat\` to launch the GUI controller.
-2. The daemon will start automatically when needed.
+2. The engine will start automatically when needed.
 
 ## Automatic Startup
 
-To have the daemon start automatically when you log in:
-- Right-click \`Install Daemon.bat\` and select "Run as administrator"
-- The daemon will start on your next login
+To have the engine start automatically when you log in:
+- Right-click \`Install Engine.bat\` and select "Run as administrator"
+- The engine will start on your next login
 
 To remove automatic startup:
-- Right-click \`Uninstall Daemon.bat\` and select "Run as administrator"
+- Right-click \`Uninstall Engine.bat\` and select "Run as administrator"
 
 ## Components
 
 - \`Loquacio.exe\` - GUI controller (Windows Presentation Foundation)
-- \`loquacio-daemon.exe\` - Background daemon (audio capture + transcription)
+- \`loquacio-engine.exe\` - Background engine (audio capture + transcription)
 - \`loquacio-tui.exe\` - Terminal UI controller (optional)
 
 ## Configuration
@@ -116,9 +116,9 @@ Models are downloaded to:
 
 ## Troubleshooting
 
-If the daemon doesn't start:
+If the engine doesn't start:
 - Check Windows Event Viewer → Windows Logs → Application
-- Ensure no firewall is blocking the daemon
+- Ensure no firewall is blocking the engine
 - Verify audio device is available in Settings → Audio tab
 
 ## Version
@@ -136,4 +136,4 @@ Write-Host ""
 Write-Host "To install:"
 Write-Host "  1. Extract the ZIP to a folder of your choice"
 Write-Host "  2. Run 'Start Loquacio.bat' to launch"
-Write-Host "  3. (Optional) Run 'Install Daemon.bat' as admin for auto-startup"
+Write-Host "  3. (Optional) Run 'Install Engine.bat' as admin for auto-startup"

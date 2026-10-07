@@ -25,7 +25,7 @@
             <TextBlock Text="Model Path" FontWeight="SemiBold" FontSize="13" />
             <TextBox Text="{Binding ModelPath}" Watermark="Path to .ggml model file"
                      IsReadOnly="True" />
-            <TextBlock Text="Models are managed by the daemon."
+            <TextBlock Text="Models are managed by the engine."
                        FontSize="11" Foreground="#6c7086" />
         </StackPanel>
 

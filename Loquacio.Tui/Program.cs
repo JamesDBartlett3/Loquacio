@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace Loquacio.Tui;
 
 /// <summary>
-/// Lightweight TUI controller for the Loquacio daemon.
+/// Lightweight TUI controller for the Loquacio engine.
 /// Connects via IPC, shows status and transcription history.
 /// Uses plain console output (no Terminal.Gui dependency for initial version).
 /// </summary>
@@ -50,11 +50,11 @@ public static class Program
 
                 Usage: loquacio-tui [command]
 
-                With no command, starts the interactive TUI (connects to the daemon
-                via IPC; start the daemon first if it is not running).
+                With no command, starts the interactive TUI (connects to the engine
+                via IPC; start the engine first if it is not running).
 
                 Commands:
-                  status      One-shot: print daemon status (listening, mode, pipeline state)
+                  status      One-shot: print engine status (listening, mode, pipeline state)
                   start       One-shot: start listening
                   stop        One-shot: stop listening
                   cancel      One-shot: cancel the active dictation run
@@ -92,7 +92,7 @@ public static class Program
         var cmd = args[0].ToLowerInvariant();
         try
         {
-            using var client = await ConnectToDaemon();
+            using var client = await ConnectToEngine();
             using var reader = new StreamReader(client);
             using var writer = new StreamWriter(client) { AutoFlush = true };
 
@@ -106,7 +106,7 @@ public static class Program
                     if (status is StatusUpdateMessage s)
                         Console.WriteLine($"Listening: {s.IsListening} | Mode: {s.Mode} | {s.StatusText} | Pipeline: {s.PipelineState}");
                     else
-                        Console.Error.WriteLine("No status response from daemon");
+                        Console.Error.WriteLine("No status response from engine");
                     break;
 
                 case "start":
@@ -146,7 +146,7 @@ public static class Program
                     if (histAck is AckMessage ha && ha.Success && ha.Error != null)
                         Console.WriteLine(ha.Error); // JSON array of history entries
                     else
-                        Console.Error.WriteLine("No history response from daemon");
+                        Console.Error.WriteLine("No history response from engine");
                     break;
 
                 default:
@@ -158,12 +158,12 @@ public static class Program
         }
         catch (SocketException)
         {
-            Console.Error.WriteLine("Cannot connect to daemon. Is it running?");
+            Console.Error.WriteLine("Cannot connect to engine. Is it running?");
             Environment.Exit(1);
         }
         catch (TimeoutException)
         {
-            Console.Error.WriteLine("Cannot connect to daemon. Is it running?");
+            Console.Error.WriteLine("Cannot connect to engine. Is it running?");
             Environment.Exit(1);
         }
     }
@@ -174,11 +174,11 @@ public static class Program
     {
         Console.Clear();
         DrawHeader();
-        Console.WriteLine("Connecting to daemon…");
+        Console.WriteLine("Connecting to engine…");
 
         try
         {
-            using var client = await ConnectToDaemon();
+            using var client = await ConnectToEngine();
             using var reader = new StreamReader(client);
             using var writer = new StreamWriter(client) { AutoFlush = true };
 
@@ -240,13 +240,13 @@ public static class Program
         }
         catch (SocketException)
         {
-            Console.WriteLine("\n Cannot connect to daemon. Is it running?");
+            Console.WriteLine("\n Cannot connect to engine. Is it running?");
             Console.WriteLine(" Start it with: systemctl --user start loquacio");
             Environment.Exit(1);
         }
         catch (TimeoutException)
         {
-            Console.WriteLine("\n Cannot connect to daemon. Is it running?");
+            Console.WriteLine("\n Cannot connect to engine. Is it running?");
             Console.WriteLine(" Start it with: systemctl --user start loquacio");
             Environment.Exit(1);
         }
@@ -332,10 +332,10 @@ public static class Program
     // ── IPC helpers ──
 
     /// <summary>
-    /// Connect to the daemon's IPC endpoint: named pipe on Windows,
+    /// Connect to the engine's IPC endpoint: named pipe on Windows,
     /// Unix domain socket on Linux/macOS.
     /// </summary>
-    private static async Task<Stream> ConnectToDaemon()
+    private static async Task<Stream> ConnectToEngine()
     {
         var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
@@ -359,7 +359,7 @@ public static class Program
             return Path.Combine(runDir, "loquacio.sock");
 
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        return Path.Combine(home, ".local", "share", "loquacio", "daemon.sock");
+        return Path.Combine(home, ".local", "share", "loquacio", "engine.sock");
     }
 
     private static async Task SendCommand(StreamWriter writer, IpcMessage msg)
@@ -369,7 +369,7 @@ public static class Program
     }
 
     /// <summary>
-    /// Consume the status snapshot the daemon pushes immediately after connect.
+    /// Consume the status snapshot the engine pushes immediately after connect.
     /// On Windows the snapshot's pending write blocks client writes until it is
     /// read, so this must happen before the first command is sent.
     /// </summary>
@@ -392,7 +392,7 @@ public static class Program
             string? line;
             try { line = await reader.ReadLineAsync(cts.Token); }
             catch (OperationCanceledException) { return null; }
-            if (line == null) return null; // daemon closed the connection
+            if (line == null) return null; // engine closed the connection
             if (DeserializeMessage(line) is T typed) return typed;
         }
         return null;

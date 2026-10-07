@@ -4,7 +4,7 @@ using Loquacio.Infrastructure;
 namespace Loquacio.Ipc;
 
 /// <summary>
-/// Base type for all IPC messages between daemon and controllers.
+/// Base type for all IPC messages between engine and controllers.
 /// Transport: newline-delimited JSON over Unix domain socket (Linux/macOS) or named pipe (Windows).
 /// </summary>
 public abstract class IpcMessage
@@ -16,10 +16,10 @@ public abstract class IpcMessage
     public string? CorrelationId { get; set; }
 }
 
-// --- Daemon → Controller messages (status updates) ---
+// --- Engine → Controller messages (status updates) ---
 
 /// <summary>
-/// Full status snapshot sent by daemon on subscription or state change.
+/// Full status snapshot sent by engine on subscription or state change.
 /// </summary>
 public class StatusUpdateMessage : IpcMessage
 {
@@ -59,7 +59,7 @@ public static class PipelineStatusStyle
 }
 
 /// <summary>
-/// New transcription result from the daemon.
+/// New transcription result from the engine.
 /// </summary>
 public class TranscriptionResultMessage : IpcMessage
 {
@@ -70,7 +70,7 @@ public class TranscriptionResultMessage : IpcMessage
 }
 
 /// <summary>
-/// Settings were changed (by another controller or daemon).
+/// Settings were changed (by another controller or engine).
 /// </summary>
 public class SettingsChangedMessage : IpcMessage
 {
@@ -78,10 +78,10 @@ public class SettingsChangedMessage : IpcMessage
     public string? ChangedSection { get; set; }
 }
 
-// --- Controller → Daemon messages (commands) ---
+// --- Controller → Engine messages (commands) ---
 
 /// <summary>
-/// Subscribe to status updates from the daemon.
+/// Subscribe to status updates from the engine.
 /// </summary>
 public class SubscribeMessage : IpcMessage
 {
@@ -116,7 +116,7 @@ public class UpdateSettingsMessage : IpcMessage
 }
 
 /// <summary>
-/// Request the full settings snapshot from the daemon.
+/// Request the full settings snapshot from the engine.
 /// </summary>
 public class GetSettingsMessage : IpcMessage
 {
@@ -124,7 +124,7 @@ public class GetSettingsMessage : IpcMessage
 }
 
 /// <summary>
-/// Request the list of available audio capture devices from the daemon.
+/// Request the list of available audio capture devices from the engine.
 /// </summary>
 public class GetDevicesMessage : IpcMessage
 {
@@ -177,7 +177,7 @@ public class SetModeMessage : IpcMessage
 }
 
 /// <summary>
-/// Full settings snapshot sent by the daemon in response to get-settings.
+/// Full settings snapshot sent by the engine in response to get-settings.
 /// </summary>
 public class SettingsSnapshotMessage : IpcMessage
 {
@@ -186,7 +186,7 @@ public class SettingsSnapshotMessage : IpcMessage
 }
 
 /// <summary>
-/// Available audio capture devices, sent by the daemon in response to get-devices.
+/// Available audio capture devices, sent by the engine in response to get-devices.
 /// </summary>
 public class DevicesListMessage : IpcMessage
 {
@@ -195,7 +195,7 @@ public class DevicesListMessage : IpcMessage
 }
 
 /// <summary>
-/// Acknowledgement response from daemon.
+/// Acknowledgement response from engine.
 /// </summary>
 public class AckMessage : IpcMessage
 {

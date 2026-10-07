@@ -2,7 +2,7 @@ namespace Loquacio.Services;
 
 /// <summary>
 /// Injects text into the currently focused window.
-/// Used by the daemon to "type" transcribed text into whatever app has focus.
+/// Used by the engine to "type" transcribed text into whatever app has focus.
 /// </summary>
 public interface ITextInjectionService
 {

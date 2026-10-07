@@ -38,7 +38,7 @@ publish() {
 
 if [[ "$SKIP_PUBLISH" != true ]]; then
   if command -v dotnet >/dev/null 2>&1; then
-    publish Loquacio.Daemon/Loquacio.Daemon.csproj
+    publish Loquacio.Engine/Loquacio.Engine.csproj
     publish Loquacio.Tui/Loquacio.Tui.csproj
     publish Loquacio.Avalonia/Loquacio.Avalonia.csproj
   else
@@ -73,16 +73,16 @@ mkdir -p "$LIBDIR" "$BINDIR" "$PKGROOT/DEBIAN" \
   "$PKGROOT/usr/lib/systemd/user"
 
 cp -r "$PUBLISH"/. "$LIBDIR/"
-chmod 755 "$LIBDIR/loquacio-daemon" \
+chmod 755 "$LIBDIR/loquacio-engine" \
           "$LIBDIR/loquacio-tui" \
           "$LIBDIR/loquacio-avalonia" 2>/dev/null || true
-install -m 644 "$SCRIPT_DIR/loquacio-daemon.service" \
-  "$PKGROOT/usr/lib/systemd/user/loquacio-daemon.service"
+install -m 644 "$SCRIPT_DIR/loquacio-engine.service" \
+  "$PKGROOT/usr/lib/systemd/user/loquacio-engine.service"
 
 # Thin launch wrappers so /usr/bin entries are just the per-app host binaries.
-cat > "$BINDIR/loquacio-daemon" <<'EOS'
+cat > "$BINDIR/loquacio-engine" <<'EOS'
 #!/bin/sh
-exec /usr/lib/loquacio/loquacio-daemon "$@"
+exec /usr/lib/loquacio/loquacio-engine "$@"
 EOS
 cat > "$BINDIR/loquacio-tui" <<'EOS'
 #!/bin/sh
@@ -102,9 +102,9 @@ Priority: optional
 Architecture: amd64
 Depends: libasound2 (>= 1.0.27), pipewire (>= 0.3) | pulseaudio
 Maintainer: James D. Bartlett III <james@datavolume.xyz>
-Description: Local Whisper-powered voice-to-text dictation (daemon + TUI + GUI)
+Description: Local Whisper-powered voice-to-text dictation (engine + TUI + GUI)
  Self-contained local dictation stack: audio capture (PipeWire), Whisper
- transcription, optional local-LLM post-processing. Includes the daemon,
+ transcription, optional local-LLM post-processing. Includes the engine,
  a TUI controller, an Avalonia GUI controller, and a systemd user unit.
  Installed to /usr/lib/loquacio; no .NET runtime required.
 Homepage: https://github.com/JamesDBartlett3/Loquacio
@@ -112,9 +112,9 @@ EOF
 cat > "$PKGROOT/DEBIAN/postinst" <<'EOS'
 #!/bin/sh
 set -e
-systemctl --user daemon-reload >/dev/null 2>&1 || true
-echo "loquacio installed. Enable the daemon with:"
-echo "  systemctl --user enable --now loquacio-daemon.service"
+systemctl --user engine-reload >/dev/null 2>&1 || true
+echo "loquacio installed. Enable the engine with:"
+echo "  systemctl --user enable --now loquacio-engine.service"
 EOS
 chmod 755 "$PKGROOT/DEBIAN/postinst"
 

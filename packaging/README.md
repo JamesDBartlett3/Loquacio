@@ -36,7 +36,7 @@ flatpak-builder --repo=flatpak-repo flatpak-build packaging/linux/com.github.jam
 **Installation:**
 ```bash
 sudo dpkg -i dist/loquacio_*_amd64.deb
-systemctl --user enable --now loquacio-daemon.service
+systemctl --user enable --now loquacio-engine.service
 ```
 
 **Features:**
@@ -55,7 +55,7 @@ systemctl --user enable --now loquacio-daemon.service
 ```bash
 tar -xzf loquacio-<version>-linux-x64.tar.gz
 cd loquacio
-./loquacio-daemon
+./loquacio-engine
 ./loquacio-tui
 ./loquacio-avalonia
 ```
@@ -109,9 +109,9 @@ flatpak run com.github.jamesdbartlett3.loquacio
 
 `build-portable.ps1` was executed on Linux (PowerShell 7.6.5, dotnet SDK 10.0.112) as a cross-publish validation:
 
-- `dotnet publish -r win-x64 --self-contained` succeeded for Daemon, WPF app, and TUI (0 errors)
+- `dotnet publish -r win-x64 --self-contained` succeeded for Engine, WPF app, and TUI (0 errors)
 - Artifact: `dist/loquacio-0.0.0.gitf17e126-win-x64-portable.zip` (86,067,634 bytes, 571 files)
-- Contains loquacio-daemon.exe, loquacio-tui.exe, Loquacio.exe (all PE32+ / MZ magic verified), plus Start/Install/Uninstall .bat helpers
+- Contains loquacio-engine.exe, loquacio-tui.exe, Loquacio.exe (all PE32+ / MZ magic verified), plus Start/Install/Uninstall .bat helpers
 - NOT executed (no Windows on this host): runtime behavior, Task Scheduler scripts, and MSIX packaging (build-msix.ps1 requires makeappx on Windows). Runtime verification on a Windows 11 host is the remaining follow-up.
 
 ## Windows Packaging (`windows/`)
@@ -161,14 +161,14 @@ Add-AppxPackage .\dist\Loquacio.Package_*.msix
 Expand-Archive .\loquacio-*-win-x64-portable.zip -DestinationPath .
 .\Start Loquacio.bat
 
-# Install daemon as scheduled task
-.\Install Daemon.bat
+# Install engine as scheduled task
+.\Install Engine.bat
 ```
 
 **Features:**
 - No installation required
 - Includes Task Scheduler setup scripts
-- All three controllers (WPF, TUI, Daemon)
+- All three controllers (WPF, TUI, Engine)
 
 ## macOS Packaging (`macOS/`)
 
@@ -227,12 +227,12 @@ Builds .app bundle on macOS runners and uploads as artifact.
 
 The auto-update service is implemented in:
 - `Loquacio.Core/Services/IUpdateService.cs` - Interface
-- `Loquacio.Daemon/Services/GitHubUpdateService.cs` - GitHub-based implementation
-- Registered in `Loquacio.Daemon/DaemonServiceRegistration.cs`
+- `Loquacio.Engine/Services/GitHubUpdateService.cs` - GitHub-based implementation
+- Registered in `Loquacio.Engine/EngineServiceRegistration.cs`
 
 ### How It Works
 
-1. **Check for Updates:** Daemon checks GitHub releases API on startup
+1. **Check for Updates:** Engine checks GitHub releases API on startup
 2. **Download:** If update available, downloads package to temp directory
 3. **Install:** Platform-specific installation:
    - **Linux:** Shows instructions to user (no silent install due to security)
@@ -241,7 +241,7 @@ The auto-update service is implemented in:
 
 ### Usage
 
-The update service is automatically registered in the daemon. To check for updates programmatically:
+The update service is automatically registered in the engine. To check for updates programmatically:
 
 ```csharp
 var updateService = serviceProvider.GetRequiredService<IUpdateService>();
@@ -294,7 +294,7 @@ After building packages, verify:
 ```bash
 # Test .deb
 sudo dpkg -i dist/loquacio_*.deb
-systemctl --user start loquacio-daemon.service
+systemctl --user start loquacio-engine.service
 /usr/bin/loquacio-tui
 
 # Test AppImage

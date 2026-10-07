@@ -21,7 +21,7 @@ It's not a toy voice-note recorder — it's a real dictation workflow:
 - **Custom vocabulary** teaches it the names and jargon Whisper would otherwise mangle
 - **Local LLM post-processing** fixes capitalization, punctuation, "um"s, and misheard words — offline
 
-The architecture is what makes it pleasant to live with: a small headless **daemon** owns the microphone and the model, and any controller — a full Avalonia GUI, a keyboard-only TUI, or the Windows WPF app — attaches to it over a private socket. Start the daemon once; dictate from whichever surface you're in.
+The architecture is what makes it pleasant to live with: a small headless **engine** owns the microphone and the model, and any controller — a full Avalonia GUI, a keyboard-only TUI, or the Windows WPF app — attaches to it over a private socket. Start the engine once; dictate from whichever surface you're in.
 
 ## Demo
 
@@ -35,7 +35,7 @@ The app itself ships as self-contained desktop builds (no runtime installation n
 | Platform | Build |
 |----------|-------|
 | Linux | `.AppImage`, `.deb` (with a systemd user service), portable `.tar.gz` |
-| Windows 10/11 | portable `.zip` with daemon auto-start script; MSIX buildable on a Windows host |
+| Windows 10/11 | portable `.zip` with engine auto-start script; MSIX buildable on a Windows host |
 
 Releases: [v0.1.0 on GitHub](https://github.com/JamesDBartlett3/Loquacio/releases)
 
@@ -49,7 +49,7 @@ dotnet build -c Release
 dotnet test Loquacio.Tests -c Release   # 377 tests, all platforms
 ```
 
-.NET 10, C#, OSL 3.0 licensed. The test suite runs on Linux and Windows alike — including the daemon, IPC, and transcription pipeline.
+.NET 10, C#, OSL 3.0 licensed. The test suite runs on Linux and Windows alike — including the engine, IPC, and transcription pipeline.
 
 ## How I Built It
 
@@ -59,7 +59,7 @@ The post-processing layer leans on the open **OpenAI-compatible API shape** that
 
 On the engineering side, the interesting decisions:
 
-- **Daemon-first architecture.** Audio capture and inference live in one long-running process; GUIs are thin clients. The dictation state machine (sessions, stage timeouts) means a controller crash never interrupts a transcription.
+- **Engine-first architecture.** Audio capture and inference live in one long-running process; GUIs are thin clients. The dictation state machine (sessions, stage timeouts) means a controller crash never interrupts a transcription.
 - **Cross-platform by construction.** The core library is plain .NET; platform code (WASAPI on Windows, D-Bus desktop integration on Linux) is isolated at the edges. The whole test suite runs on Linux even though one controller is WPF.
 - **Honest packaging.** Linux builds are cross-published on Linux (AppImage validated without FUSE, deb, tarball); the Windows zip is cross-built with `EnableWindowsTargeting` and every `.exe` verified as a real PE32+ binary before shipping. v0.1.0 went out this weekend with all four artifacts attached.
 
