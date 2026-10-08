@@ -81,8 +81,18 @@ public static class EngineServiceRegistration
             return new GitHubUpdateService(httpClient, logger, hostApplicationLifetime, repositoryOwner, repositoryName, currentVersion);
         });
 
-        // Keyword detection (energy-based VAD over the shared audio capture service)
-        services.AddSingleton<IKeywordDetectionService, KeywordDetectionService>();
+        // Keyword detection: Porcupine wake-word engine when a Picovoice
+        // AccessKey is configured (PICOVOICE_ACCESS_KEY env var), otherwise the
+        // energy-based VAD fallback over the shared audio capture service.
+        services.AddSingleton<IPorcupineEngineFactory, PorcupineEngineFactory>();
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PICOVOICE_ACCESS_KEY")))
+        {
+            services.AddSingleton<IKeywordDetectionService, PorcupineKeywordDetectionService>();
+        }
+        else
+        {
+            services.AddSingleton<IKeywordDetectionService, KeywordDetectionService>();
+        }
 
         // --- Platform-specific implementations ---
         // Audio capture: WASAPI on Windows; PipeWire (pw-record) on Linux;

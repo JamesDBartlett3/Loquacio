@@ -46,19 +46,12 @@ public interface IKeywordDetectionService : IDisposable
     bool IsAvailable { get; }
 }
 
+
 /// <summary>
-/// Implementation of keyword detection using simple energy-based voice activity detection
-/// combined with a lightweight pattern matching approach.
-/// 
-/// This implementation does NOT require external dependencies like Porcupine.
-/// It uses a simple audio energy threshold to detect speech segments and
-/// can optionally forward detected speech to a lightweight classifier.
-/// 
-/// For production-grade wake word detection, replace with Porcupine:
-///   1. Install Porcupine SDK NuGet package
-///   2. Get a free AccessKey from https://console.picovoice.ai/
-///   3. Download a wake word model (.ppn file) or use built-in keywords
-///   4. Replace this implementation with PorcupineEngine
+/// Fallback keyword detection using energy-based voice activity detection.
+/// Used when no Picovoice AccessKey is configured; any speech burst above the
+/// energy threshold for the minimum frame count toggles activation. For
+/// production-grade wake-word detection use <see cref="PorcupineKeywordDetectionService"/>.
 /// </summary>
 public class KeywordDetectionService : IKeywordDetectionService
 {
@@ -86,7 +79,7 @@ public class KeywordDetectionService : IKeywordDetectionService
 
     /// <summary>
     /// Event fired when an error occurs. Currently unused in the energy-based
-    /// implementation but required by the interface for future Porcupine integration.
+    /// implementation but required by the interface.
     /// </summary>
 #pragma warning disable CS0067 // Event is part of the interface contract
     public event EventHandler<Exception>? OnError;
@@ -96,7 +89,6 @@ public class KeywordDetectionService : IKeywordDetectionService
 
     /// <summary>
     /// Keyword detection is always "available" with the energy-based fallback.
-    /// Porcupine integration would set this based on model availability.
     /// </summary>
     public bool IsAvailable => true;
 
@@ -171,15 +163,12 @@ public class KeywordDetectionService : IKeywordDetectionService
     }
 
     /// <summary>
-    /// Process a raw audio frame for keyword detection.
-    /// With the energy-based fallback, this is a no-op since we use the OnAudioLevel event.
-    /// With Porcupine, this would feed samples to the Porcupine engine.
+    /// Process a raw audio frame for keyword detection (energy-based VAD).
     /// </summary>
     public void ProcessAudioFrame(short[] audioFrame)
     {
         if (!_isActive || audioFrame is null || audioFrame.Length == 0) return;
 
-        // Energy-based VAD as a simple keyword detector
         double sumSquares = 0;
         for (int i = 0; i < audioFrame.Length; i++)
         {
@@ -224,14 +213,99 @@ public class KeywordDetectionService : IKeywordDetectionService
 }
 
 /// <summary>
-/// Placeholder for Porcupine-based keyword detection.
-/// When Porcupine SDK is available, this replaces the energy-based fallback.
+/// Minimal seam over the native Porcupine engine so tests can exercise the
+/// service without a Picovoice AccessKey or the native audio runtime.
 /// </summary>
-#pragma warning disable CS0067 // Events are unused until Porcupine SDK is integrated
+public interface IPorcupineEngine : IDisposable
+{
+    /// <summary>Number of PCM samples expected per Process call.</summary>
+    int FrameLength { get; }
+
+    /// <summary>Required sample rate in Hz (Porcupine: 16 kHz).</summary>
+    int SampleRate { get; }
+
+    /// <summary>Process one frame; returns &gt;= 0 (keyword index) on detection, -1 otherwise.</summary>
+    int Process(short[] pcm);
+}
+
+/// <summary>
+/// Creates Porcupine engines from a Picovoice AccessKey plus either a custom
+/// .ppn keyword model path or a built-in keyword name.
+/// </summary>
+public interface IPorcupineEngineFactory
+{
+    /// <summary>
+    /// Create an engine. If <paramref name="keywordModelPath"/> points at an
+    /// existing .ppn file it is used; otherwise <paramref name="keyword"/> must
+    /// name a Porcupine built-in keyword (case/punctuation-insensitive, e.g.
+    /// "Porcupine", "Jarvis", "Hey Siri").
+    /// </summary>
+    IPorcupineEngine Create(string accessKey, string? keywordModelPath, string keyword);
+}
+
+/// <summary>
+/// Thin wrapper over the Picovoice Porcupine SDK (NuGet: Porcupine 4.x).
+/// </summary>
+public sealed class PorcupineEngineFactory : IPorcupineEngineFactory
+{
+    private sealed class Engine : IPorcupineEngine
+    {
+        private readonly Pv.Porcupine _porcupine;
+        public Engine(Pv.Porcupine porcupine) => _porcupine = porcupine;
+        public int FrameLength => _porcupine.FrameLength;
+        public int SampleRate => _porcupine.SampleRate;
+        public int Process(short[] pcm) => _porcupine.Process(pcm);
+        public void Dispose() => _porcupine.Dispose();
+    }
+
+    public IPorcupineEngine Create(string accessKey, string? keywordModelPath, string keyword)
+    {
+        if (string.IsNullOrWhiteSpace(accessKey))
+            throw new InvalidOperationException(
+                "Picovoice AccessKey is required (set the PICOVOICE_ACCESS_KEY environment variable).");
+
+        if (!string.IsNullOrWhiteSpace(keywordModelPath) && File.Exists(keywordModelPath))
+        {
+            return new Engine(Pv.Porcupine.FromKeywordPaths(accessKey, [keywordModelPath]));
+        }
+
+        var normalized = keyword.Trim().Replace(" ", "").Replace("_", "").Replace("-", "");
+        var match = Enum.GetNames<Pv.BuiltInKeyword>()
+            .FirstOrDefault(n => n.Replace("_", "").Equals(normalized, StringComparison.OrdinalIgnoreCase))
+            ?? throw new NotSupportedException(
+                $"'{keyword}' is not a Porcupine built-in keyword. Train a custom wake word " +
+                "(e.g. \"Hey Dictate\") at https://console.picovoice.ai/ and point " +
+                "PICOVOICE_KEYWORD_PATH at the downloaded .ppn file.");
+
+        return new Engine(Pv.Porcupine.FromBuiltInKeywords(accessKey, [Enum.Parse<Pv.BuiltInKeyword>(match)]));
+    }
+}
+
+/// <summary>
+/// Keyword detection using the Picovoice Porcupine wake-word engine.
+///
+/// Requires:
+///   - PICOVOICE_ACCESS_KEY env var (free key from https://console.picovoice.ai/)
+///   - either a built-in keyword name, or a custom .ppn model via
+///     PICOVOICE_KEYWORD_PATH (the default "Hey Dictate" is custom).
+///
+/// Audio frames fed to <see cref="ProcessAudioFrame"/> are re-chunked to the
+/// engine's frame length; engine errors are surfaced via <see cref="OnError"/>
+/// without crashing the audio pipeline.
+/// </summary>
 public class PorcupineKeywordDetectionService : IKeywordDetectionService
 {
+    private const double CooldownMs = 3000; // Min time between detections
+
     private readonly ILogger<PorcupineKeywordDetectionService> _logger;
+    private readonly IPorcupineEngineFactory _engineFactory;
+    private readonly string? _keywordModelPath;
+
+    private IPorcupineEngine? _engine;
+    private readonly Queue<short> _sampleBuffer = new();
+    private DateTime _lastDetection = DateTime.MinValue;
     private bool _isActive;
+    private bool _disposed;
 
     public event EventHandler? KeywordDetected;
     public event EventHandler<Exception>? OnError;
@@ -244,45 +318,118 @@ public class PorcupineKeywordDetectionService : IKeywordDetectionService
     public bool IsAvailable =>
         !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PICOVOICE_ACCESS_KEY"));
 
-    public PorcupineKeywordDetectionService(ILogger<PorcupineKeywordDetectionService> logger)
+    public PorcupineKeywordDetectionService(
+        ILogger<PorcupineKeywordDetectionService> logger,
+        IPorcupineEngineFactory? engineFactory = null)
     {
         _logger = logger;
+        _engineFactory = engineFactory ?? new PorcupineEngineFactory();
+        _keywordModelPath = Environment.GetEnvironmentVariable("PICOVOICE_KEYWORD_PATH");
     }
 
     public Task StartAsync(string keyword, CancellationToken ct = default)
     {
-        if (!IsAvailable)
+        if (_isActive)
         {
-            _logger.LogWarning("Porcupine keyword detection not available — set PICOVOICE_ACCESS_KEY env var");
+            _logger.LogWarning("Keyword detection is already active");
             return Task.CompletedTask;
         }
 
-        // TODO: Initialize Porcupine engine when SDK is installed:
-        // _porcupine = Porcupine.Builder()
-        //     .SetAccessKey(accessKey)
-        //     .SetBuiltInKeyword(BuiltInKeyword.fromString(keyword))
-        //     .Build();
-        // _isActive = true;
+        if (!IsAvailable)
+        {
+            _logger.LogWarning(
+                "Porcupine keyword detection unavailable — set PICOVOICE_ACCESS_KEY " +
+                "(free key from https://console.picovoice.ai/)");
+            return Task.CompletedTask;
+        }
 
-        _logger.LogWarning("Porcupine keyword detection not yet implemented — requires SDK installation");
+        var accessKey = Environment.GetEnvironmentVariable("PICOVOICE_ACCESS_KEY")!;
+        try
+        {
+            _engine = _engineFactory.Create(accessKey, _keywordModelPath, keyword);
+            _sampleBuffer.Clear();
+            _isActive = true;
+            _logger.LogInformation(
+                "Porcupine keyword detection started for '{Keyword}' (model: {Model})",
+                keyword, string.IsNullOrWhiteSpace(_keywordModelPath) ? "built-in" : _keywordModelPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize Porcupine engine for '{Keyword}'", keyword);
+            OnError?.Invoke(this, ex);
+        }
+
         return Task.CompletedTask;
     }
 
     public Task StopAsync()
     {
+        if (!_isActive)
+            return Task.CompletedTask;
+
         _isActive = false;
+        _engine?.Dispose();
+        _engine = null;
+        _sampleBuffer.Clear();
+
+        _logger.LogInformation("Porcupine keyword detection stopped");
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Feed raw PCM (16 kHz, mono, 16-bit) into the engine. Input chunks of any
+    /// size are accepted; they are re-chunked to the engine frame length.
+    /// </summary>
     public void ProcessAudioFrame(short[] audioFrame)
     {
-        // TODO: Feed to Porcupine engine when implemented
+        if (!_isActive || _engine is null || audioFrame is null || audioFrame.Length == 0)
+            return;
+
+        foreach (var sample in audioFrame)
+            _sampleBuffer.Enqueue(sample);
+
+        var frame = new short[_engine.FrameLength];
+        while (_sampleBuffer.Count >= _engine.FrameLength)
+        {
+            for (var i = 0; i < frame.Length; i++)
+                frame[i] = _sampleBuffer.Dequeue();
+
+            try
+            {
+                var keywordIndex = _engine.Process(frame);
+                if (keywordIndex >= 0)
+                    TryDetect();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Porcupine Process failed; stopping keyword detection");
+                OnError?.Invoke(this, ex);
+                StopAsync().GetAwaiter().GetResult();
+                return;
+            }
+        }
+    }
+
+    private void TryDetect()
+    {
+        var now = DateTime.UtcNow;
+
+        // Enforce cooldown to prevent rapid re-triggering
+        if ((now - _lastDetection).TotalMilliseconds < CooldownMs)
+            return;
+
+        _lastDetection = now;
+
+        _logger.LogInformation("Wake word detected (Porcupine)");
+        KeywordDetected?.Invoke(this, EventArgs.Empty);
     }
 
     public void Dispose()
     {
-        _isActive = false;
+        if (_disposed) return;
+        _disposed = true;
+
+        StopAsync().GetAwaiter().GetResult();
         GC.SuppressFinalize(this);
-    }
 }
-#pragma warning restore CS0067
+}
