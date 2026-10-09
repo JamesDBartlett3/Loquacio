@@ -234,8 +234,8 @@ This plan breaks down the Loquacio implementation into 6 phases over 4 innovatio
 ### Tasks
 
 #### 5.1 Hotkey Service
-- [ ] Create `IHotkeyService` interface
-- [ ] Implement `HotkeyService`:
+- [x] Create `IHotkeyService` interface
+- [x] Implement `HotkeyService`:
   - Register global hotkeys (Win32 RegisterHotKey)
   - Hotkey: Ctrl+Alt+D (toggle listening)
   - Hotkey: Ctrl+Alt+M (toggle mode)
@@ -246,8 +246,8 @@ This plan breaks down the Loquacio implementation into 6 phases over 4 innovatio
 **Verification:** Hotkeys trigger correct actions from any app.
 
 #### 5.2 Keyword Detection Service
-- [ ] Create `IKeywordDetectionService` interface
-- [ ] Implement `KeywordDetectionService` with Porcupine:
+- [x] Create `IKeywordDetectionService` interface
+- [x] Implement `KeywordDetectionService` with Porcupine:
   - Load wake word model
   - Poll audio stream for wake word
   - Trigger toggle on detection
@@ -256,15 +256,15 @@ This plan breaks down the Loquacio implementation into 6 phases over 4 innovatio
 **Verification:** Saying "Hey Dictate" toggles listening on/off.
 
 #### 5.3 Hotkey Configuration UI
-- [ ] Add hotkey editor to MainWindow:
+- [x] Add hotkey editor to MainWindow:
   - Grid with hotkey name, current binding, edit button
   - Capture keypress on edit (show "Press a key..." dialog)
 
 **Verification:** User can customize hotkeys.
 
 #### 5.4 Unit Tests
-- [ ] Test HotkeyService registration/unregistration
-- [ ] Test KeywordDetectionService with mock audio
+- [x] Test HotkeyService registration/unregistration
+- [x] Test KeywordDetectionService with mock audio
 
 **Verification:** All tests pass.
 
