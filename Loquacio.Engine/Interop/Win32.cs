@@ -91,7 +91,7 @@ internal static class Win32
 /// Win32 MSG structure for message pump.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-internal struct MSG
+public struct MSG
 {
     public IntPtr hWnd;
     public uint message;

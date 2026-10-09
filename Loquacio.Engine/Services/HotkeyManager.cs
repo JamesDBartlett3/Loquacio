@@ -19,9 +19,11 @@ public sealed class HotkeyManager(
     IConfiguration configuration,
     ILogger<HotkeyManager> logger,
     IX11Interop? x11Interop = null,
+    IWin32HotkeyInterop? win32Interop = null,
     ISettingsService? settingsService = null,
     IBackgroundTranscriptionService? transcription = null,
-    IClipboardService? clipboard = null
+    IClipboardService? clipboard = null,
+    string? forcePlatform = null
 ) : IDisposable
 {
     private CancellationTokenSource? _cts;
@@ -35,6 +37,20 @@ public sealed class HotkeyManager(
     private static string? _lastX11Error;
     private List<HotkeyEntry> _hotkeyEntries = [];
 
+    // Defaults to the real P/Invoke-backed interop; tests inject a fake via
+    // the constructor and never touch user32.dll.
+    private IWin32HotkeyInterop Win32Interop => field ??= win32Interop ?? new Win32HotkeyInterop();
+
+    // Platform selection. forcePlatform ("windows"/"linux"/"none") exists so
+    // unit tests can exercise the Win32/X11 paths on any host OS without
+    // touching real OS hotkey registration.
+    private bool IsWindows => forcePlatform is not null
+        ? string.Equals(forcePlatform, "windows", StringComparison.OrdinalIgnoreCase)
+        : RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    private bool IsLinux => forcePlatform is not null
+        ? string.Equals(forcePlatform, "linux", StringComparison.OrdinalIgnoreCase)
+        : RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -42,11 +58,11 @@ public sealed class HotkeyManager(
         // Load hotkey configuration
         await LoadConfiguration();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (IsLinux)
         {
             InitializeX11();
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (IsWindows)
         {
             InitializeWin32();
         }
@@ -378,7 +394,16 @@ public sealed class HotkeyManager(
     private void Win32MessageLoop(CancellationToken ct)
     {
         logger.LogInformation("Win32 hotkey message loop started.");
-        _win32ThreadId = Win32.GetCurrentThreadId();
+        try { Win32MessageLoopCore(ct); }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Win32 hotkey message loop failed on pump thread");
+        }
+    }
+
+    private void Win32MessageLoopCore(CancellationToken ct)
+    {
+        _win32ThreadId = Win32Interop.GetCurrentThreadId();
         InitializeWin32OnPumpThread();
         if (_win32Hwnd == IntPtr.Zero)
             return;
@@ -389,7 +414,7 @@ public sealed class HotkeyManager(
             {
                 // GetMessage blocks until a message arrives; shutdown uses
                 // PostThreadMessage(WM_QUIT), which wakes the pump.
-                var result = Win32.GetMessage(out MSG msg, _win32Hwnd, 0, 0);
+                var result = Win32Interop.GetMessage(out MSG msg, _win32Hwnd, 0, 0);
                 if (result == 0) // WM_QUIT
                     break;
                 if (result == -1) // Error
@@ -408,8 +433,8 @@ public sealed class HotkeyManager(
                     _ = Task.Run(() => DispatchHotkeyActionAsync(action));
                 }
 
-                Win32.TranslateMessage(ref msg);
-                Win32.DispatchMessage(ref msg);
+                Win32Interop.TranslateMessage(ref msg);
+                Win32Interop.DispatchMessage(ref msg);
             }
             catch (OperationCanceledException)
             {
@@ -430,13 +455,7 @@ public sealed class HotkeyManager(
         try
         {
             // Create a message-only window to receive WM_HOTKEY
-            var hInstance = Win32.GetModuleHandle(null);
-            _win32Hwnd = Win32.CreateWindowEx(
-                0, // WS_EX_* is irrelevant for a message-only window
-                "Static", "", 0,
-                0, 0, 0, 0,
-                (IntPtr)(-3), // HWND_MESSAGE — message-only window
-                IntPtr.Zero, hInstance, IntPtr.Zero);
+            _win32Hwnd = Win32Interop.CreateMessageOnlyWindow("Static");
 
             if (_win32Hwnd == IntPtr.Zero)
             {
@@ -456,7 +475,7 @@ public sealed class HotkeyManager(
                 }
 
                 var mods = ParseModifiersWin32(entry.Modifiers);
-                if (Win32.RegisterHotKey(_win32Hwnd, hotkeyId, mods, vk))
+                if (Win32Interop.RegisterHotKey(_win32Hwnd, hotkeyId, mods, vk))
                 {
                     _registeredWin32Actions.Add((hotkeyId, entry.Action));
                     logger.LogDebug("Win32: Registered hotkey {Mods}+{Key} (id={Id}) → {Action}",
@@ -475,7 +494,7 @@ public sealed class HotkeyManager(
             if (_registeredWin32Actions.Count == 0)
             {
                 logger.LogWarning("Win32: No hotkeys registered successfully.");
-                Win32.DestroyWindow(_win32Hwnd);
+                Win32Interop.DestroyWindow(_win32Hwnd);
                 _win32Hwnd = IntPtr.Zero;
                 return;
             }
@@ -553,12 +572,12 @@ public sealed class HotkeyManager(
 
         foreach (var (id, _) in _registeredWin32Actions)
         {
-            try { Win32.UnregisterHotKey(_win32Hwnd, id); }
+            try { Win32Interop.UnregisterHotKey(_win32Hwnd, id); }
             catch { }
         }
         _registeredWin32Actions.Clear();
 
-        try { Win32.DestroyWindow(_win32Hwnd); }
+        try { Win32Interop.DestroyWindow(_win32Hwnd); }
         catch { }
         _win32Hwnd = IntPtr.Zero;
     }
@@ -585,8 +604,8 @@ public sealed class HotkeyManager(
         // first — after the window is destroyed GetMessage would just return -1
         // forever, so the only clean exit is WM_QUIT.
         _cts?.Cancel();
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && _win32ThreadId != 0)
-            Win32.PostThreadMessage(_win32ThreadId, (uint)Win32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+        if (IsWindows && _win32ThreadId != 0)
+            Win32Interop.PostThreadMessage(_win32ThreadId, (uint)Win32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
         if (_eventLoopTask is not null)
         {
             try { await Task.WhenAny(_eventLoopTask, Task.Delay(TimeSpan.FromSeconds(2), ct)); } catch { }
@@ -594,7 +613,7 @@ public sealed class HotkeyManager(
         _cts?.Dispose();
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (IsLinux)
         {
             UngrabAllX11Keys();
             if (_x11Display != IntPtr.Zero && x11Interop is not null)
@@ -603,16 +622,16 @@ public sealed class HotkeyManager(
                 _x11Display = IntPtr.Zero;
             }
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (IsWindows)
         {
             UnregisterAllWin32Hotkeys();
         }
 
         await LoadConfiguration();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (IsLinux)
             InitializeX11();
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (IsWindows)
             InitializeWin32();
     }
 
@@ -625,7 +644,7 @@ public sealed class HotkeyManager(
 
         _cts?.Cancel();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (IsLinux)
         {
             UngrabAllX11Keys();
             if (_x11Display != IntPtr.Zero && x11Interop is not null)
@@ -634,10 +653,10 @@ public sealed class HotkeyManager(
                 _x11Display = IntPtr.Zero;
             }
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (IsWindows)
         {
             if (_win32ThreadId != 0)
-                Win32.PostThreadMessage(_win32ThreadId, (uint)Win32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+                Win32Interop.PostThreadMessage(_win32ThreadId, (uint)Win32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
             UnregisterAllWin32Hotkeys();
         }
 
