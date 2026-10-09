@@ -106,9 +106,6 @@ public partial class App : Application
         // Engine lifecycle management (start, monitor, restart)
         services.AddSingleton<WpfEngineLifecycleService>();
 
-        // In-process engine option (hosts the engine inside this process)
-        services.AddSingleton<Loquacio.Engine.Services.InProcessEngineHost>();
-
         // Controller settings persistence
         services.AddSingleton<WpfSettingsPersistenceService>();
 
@@ -122,17 +119,17 @@ public partial class App : Application
         // enumeration here is read-only and doesn't conflict with the engine.
         if (OperatingSystem.IsWindows())
         {
-            services.AddSingleton<IAudioCaptureService, Loquacio.Engine.Services.Audio.WasapiAudioCaptureService>();
+            services.AddSingleton<IAudioCaptureService, WasapiAudioCaptureService>();
         }
         else
         {
-            services.AddSingleton<IAudioCaptureService, Loquacio.Engine.Services.UnsupportedAudioCaptureService>();
+            services.AddSingleton<IAudioCaptureService, UnsupportedAudioCaptureService>();
         }
 
         // Global hotkeys are owned by the engine's HotkeyManager — the controller
         // must not double-register system hotkeys. This no-op only satisfies the
         // GeneralTabViewModel dependency.
-        services.AddSingleton<IHotkeyService, Loquacio.Engine.Services.NullHotkeyService>();
+        services.AddSingleton<IHotkeyService, NullHotkeyService>();
 
         services.AddSingleton<AudioTabViewModel>();
         services.AddSingleton<WhisperTabViewModel>();

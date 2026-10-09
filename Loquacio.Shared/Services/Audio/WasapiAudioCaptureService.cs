@@ -4,7 +4,7 @@ using Loquacio.Infrastructure;
 using Loquacio.Models;
 using Loquacio.Services;
 
-namespace Loquacio.Engine.Services.Audio;
+namespace Loquacio.Services;
 
 public sealed class WasapiAudioCaptureService : IAudioCaptureService, IDisposable
 {

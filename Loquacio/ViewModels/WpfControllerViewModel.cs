@@ -21,7 +21,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     private readonly WpfSettingsPersistenceService _settings;
     private readonly ISettingsService _engineSettingsService;
     private readonly WpfEngineLifecycleService? _lifecycle;
-    private readonly Loquacio.Engine.Services.InProcessEngineHost? _inProcessEngineHost;
     private readonly ITrayIconService _trayIcon;
     private readonly IAutoStartService? _autoStart;
     private readonly ILogger<WpfControllerViewModel> _logger;
@@ -67,9 +66,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _autoStartEngine = true;
-
-    [ObservableProperty]
-    private bool _inProcessEngine;
 
     [ObservableProperty]
     private bool _startMinimized;
@@ -215,7 +211,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         ITrayIconService trayIcon,
         ILogger<WpfControllerViewModel> logger,
         WpfEngineLifecycleService? lifecycle = null,
-        Loquacio.Engine.Services.InProcessEngineHost? inProcessEngine = null,
         ISettingsService? engineSettingsService = null,
         IAutoStartService? autoStart = null)
     {
@@ -226,7 +221,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         _autoStart = autoStart;
         _logger = logger;
         _lifecycle = lifecycle;
-        _inProcessEngineHost = inProcessEngine;
         _engineSettingsService = engineSettingsService ?? new SettingsService(NullLoggerFactory.Instance.CreateLogger<SettingsService>());
         _startWithWindows = autoStart is not null && autoStart.IsEnabled;
 
@@ -242,7 +236,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         CloseToTray = s.CloseToTray;
         StartMinimized = s.StartMinimized;
         AutoStartEngine = s.AutoStartEngine;
-        InProcessEngine = s.InProcessEngine;
         ThemeMode = s.ThemeMode;
 
         _logger.LogInformation("Settings loaded from persistence");
@@ -256,7 +249,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
             CloseToTray = CloseToTray,
             StartMinimized = StartMinimized,
             AutoStartEngine = AutoStartEngine,
-            InProcessEngine = InProcessEngine,
             ThemeMode = ThemeMode,
         };
         _settings.Save(s);
@@ -268,39 +260,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         _initialized = true;
 
         // Optionally ensure engine is running before connecting
-        if (AutoStartEngine && _inProcessEngineHost != null && InProcessEngine)
-        {
-            // In-process mode: host the engine inside this process, unless an
-            // external engine is already serving the IPC endpoint.
-            var externalRunning = _lifecycle != null && await _lifecycle.IsEngineRunningAsync();
-            if (!externalRunning)
-            {
-                try
-                {
-                    await _inProcessEngineHost.StartAsync();
-                    EngineStateText = "Running";
-                    _logger.LogInformation("In-process background service started ({Endpoint})", _inProcessEngineHost.Endpoint);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to start in-process background service");
-                    _dispatcher.BeginInvoke(() =>
-                    {
-                        IsConnected = false;
-                        ConnectionStatus = "Background service unavailable";
-                        StatusText = "Cannot start background service";
-                        StatusColor = "#F44336";
-                        _trayIcon.UpdateState(TrayIconState.Error);
-                    });
-                    return;
-                }
-            }
-            else
-            {
-                EngineStateText = "Running";
-            }
-        }
-        else if (_lifecycle != null && AutoStartEngine)
+        if (_lifecycle != null && AutoStartEngine)
         {
             EngineStateText = DescribeServiceState(_lifecycle.State.ToString());
             _lifecycle.StateChanged += (_, state) =>
@@ -357,9 +317,8 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                 }
             }
 
-            // Start health monitoring if lifecycle service is available (external engine mode only;
-            // in-process mode is supervised directly by RestartEngine/Dispose)
-            if (!InProcessEngine)
+            // Start health monitoring of the external engine process
+            _lifecycle?.StartHealthMonitoring();
                 _lifecycle?.StartHealthMonitoring();
 
             _logger.LogInformation("Controller initialized and connected to engine");
@@ -544,23 +503,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task RestartEngine()
     {
-        // In-process mode: restart the hosted engine
-        if (InProcessEngine && _inProcessEngineHost != null)
-        {
-            try
-            {
-                await _inProcessEngineHost.StopAsync();
-                await _inProcessEngineHost.StartAsync();
-                EngineStateText = "Running";
-                await Reconnect();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to restart in-process engine");
-            }
-            return;
-        }
-
         if (_lifecycle == null) return;
 
         try
@@ -601,12 +543,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task ShutdownAsync()
     {
-        if (_inProcessEngineHost is { IsRunning: true })
-        {
-            try { await _inProcessEngineHost.StopAsync(); }
-            catch (Exception ex) { _logger.LogWarning(ex, "Failed to stop in-process background service"); }
-            return;
-        }
 
         if (_lifecycle is not null)
         {
@@ -627,10 +563,6 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         if (VocabularySettings is not null) VocabularySettings.SettingsSaved -= OnSettingsSaved;
         if (LlmSettings is not null) LlmSettings.SettingsSaved -= OnSettingsSaved;
         _lifecycle?.Dispose();
-        if (_inProcessEngineHost is { IsRunning: true })
-        {
-            _ = _inProcessEngineHost.StopAsync();
-        }
         _engine.Dispose();
         GC.SuppressFinalize(this);
     }

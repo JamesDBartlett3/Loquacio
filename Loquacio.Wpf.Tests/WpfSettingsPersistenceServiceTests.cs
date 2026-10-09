@@ -54,7 +54,6 @@ public class WpfSettingsPersistenceServiceTests
                 CloseToTray = false,
                 StartWithWindows = true,
                 AutoStartEngine = false,
-                InProcessEngine = true,
             };
 
             svc.Save(settings);
@@ -82,7 +81,6 @@ public class WpfSettingsPersistenceServiceTests
             Assert.False(loaded.CloseToTray);
             Assert.True(loaded.StartWithWindows);
             Assert.False(loaded.AutoStartEngine);
-            Assert.True(loaded.InProcessEngine);
         }
         finally
         {
@@ -151,6 +149,5 @@ public class WpfSettingsPersistenceServiceTests
         Assert.True(settings.MinimizeToTray);
         Assert.True(settings.CloseToTray);
         Assert.True(settings.AutoStartEngine);
-        Assert.False(settings.InProcessEngine);
     }
 }
