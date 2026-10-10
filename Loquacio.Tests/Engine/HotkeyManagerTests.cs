@@ -242,6 +242,118 @@ public class HotkeyManagerTests
         Assert.True(true);
     }
 
+
+    // ----- Settings-driven hotkey registration (Phase 5.x) -----
+
+    private sealed class InMemorySettingsService : ISettingsService
+    {
+        public Loquacio.Models.Settings Settings { get; set; } = new();
+        public event EventHandler? SettingsChanged;
+        public Task<Loquacio.Models.Settings> GetSettingsAsync(CancellationToken ct = default) => Task.FromResult(Settings);
+        public Task SaveSettingsAsync(Loquacio.Models.Settings settings, CancellationToken ct = default)
+        {
+            Settings = settings;
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
+            return Task.CompletedTask;
+        }
+        public void SimulateExternalChange() => SettingsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static HotkeyManager CreateWin32SettingsManager(
+        IActivationManagerService activation,
+        FakeWin32Interop win32,
+        InMemorySettingsService settings)
+    {
+        var config = new ConfigurationBuilder().Build();
+        return new(activation, config, Substitute.For<ILogger<HotkeyManager>>(),
+            x11Interop: null, win32Interop: win32, settingsService: settings,
+            forcePlatform: "windows");
+    }
+
+    [Fact]
+    public async Task SettingsHotkeys_AreRegisteredOnInitialize()
+    {
+        var win32 = new FakeWin32Interop();
+        var settings = new InMemorySettingsService();
+        using var manager = CreateWin32SettingsManager(_activation, win32, settings);
+
+        await manager.InitializeAsync();
+
+        // 2 config defaults + 4 activation hotkeys from Settings defaults,
+        // registered asynchronously on the pump thread
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Registered.Count == 6),
+            TimeSpan.FromSeconds(5)), "Expected 6 registrations");
+    }
+
+    [Fact]
+    public async Task SettingsHotkey_EmptyBinding_IsSkipped()
+    {
+        var win32 = new FakeWin32Interop();
+        var settings = new InMemorySettingsService();
+        settings.Settings.Activation.StopHotkey = "";
+        settings.Settings.Activation.CopyLastOutputHotkey = "";
+        using var manager = CreateWin32SettingsManager(_activation, win32, settings);
+
+        await manager.InitializeAsync();
+
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Registered.Count == 4),
+            TimeSpan.FromSeconds(5)), "Expected 4 registrations"); // toggle + mode
+    }
+
+    [Fact]
+    public async Task SettingsChanged_ReregistersHotkeys_WithNewCombo()
+    {
+        var win32 = new FakeWin32Interop();
+        var settings = new InMemorySettingsService();
+        using var manager = CreateWin32SettingsManager(_activation, win32, settings);
+        await manager.InitializeAsync();
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Registered.Count == 6),
+            TimeSpan.FromSeconds(5)), "Expected 6 initial registrations");
+        var initialCount = win32.Registered.Count;
+
+        settings.Settings.Activation.Hotkey = "Ctrl+Shift+Z";
+        settings.SimulateExternalChange();
+
+        // Old bindings torn down and re-registered with the new combo.
+        // FakeWin32Interop.Registered is append-only: after one reapply there
+        // are 12 registration records (6 old + 6 new), and the new set
+        // includes VK 0x5A (Z key).
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Unregistered.Count >= 6),
+            TimeSpan.FromSeconds(5)), "Expected old bindings unregistered");
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Registered.Count == initialCount * 2),
+            TimeSpan.FromSeconds(5)), "Expected re-registration");
+        Assert.Contains(win32.Registered, r => r.vk == 0x5A);
+    }
+
+    [Fact]
+    public async Task ReapplyHotkeysAsync_AfterSettingsChange_DropsRemovedBinding()
+    {
+        var win32 = new FakeWin32Interop();
+        var settings = new InMemorySettingsService();
+        using var manager = CreateWin32SettingsManager(_activation, win32, settings);
+        await manager.InitializeAsync();
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Registered.Count == 6),
+            TimeSpan.FromSeconds(5)), "Expected 6 initial registrations");
+        var before = win32.Registered.Count;
+
+        settings.Settings.Activation.CopyLastOutputHotkey = "";
+        await manager.ReapplyHotkeysAsync();
+
+        // All 6 old bindings torn down; 5 re-registered (6 old + 5 new records)
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Unregistered.Count == before),
+            TimeSpan.FromSeconds(5)), "Expected all old bindings unregistered");
+        Assert.True(await WaitForAsync(
+            () => Task.FromResult(win32.Registered.Count == before + before - 1),
+            TimeSpan.FromSeconds(5)), "Expected 5 re-registered bindings");
+    }
+
     [Fact]
     public async Task InitializeAsync_LogsPlatformInfo()
     {

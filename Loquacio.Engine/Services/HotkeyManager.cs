@@ -34,6 +34,7 @@ public sealed class HotkeyManager(
     private IntPtr _win32Hwnd;
     private uint _win32ThreadId;
     private bool _disposed;
+    private int _reapplyDepth; // guards against reentrant SettingsChanged-triggered reapplies
     private static string? _lastX11Error;
     private List<HotkeyEntry> _hotkeyEntries = [];
 
@@ -54,6 +55,13 @@ public sealed class HotkeyManager(
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+        // In-process engine mode shares ISettingsService with the controller:
+        // a settings save (e.g. a new hotkey combo picked in the UI) must take
+        // effect live. The IPC path calls ReapplyHotkeysAsync explicitly, so
+        // the reentrancy guard below coalesces the double trigger.
+        if (settingsService is not null)
+            settingsService.SettingsChanged += OnSettingsChanged;
 
         // Load hotkey configuration
         await LoadConfiguration();
@@ -597,7 +605,34 @@ public sealed class HotkeyManager(
     public async Task ReapplyHotkeysAsync(CancellationToken ct = default)
     {
         if (_disposed) return;
+        if (Interlocked.CompareExchange(ref _reapplyDepth, 1, 0) != 0)
+        {
+            logger.LogDebug("Reapply already in progress — skipping redundant trigger");
+            return;
+        }
 
+        try
+        {
+            await ReapplyCoreAsync(ct);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _reapplyDepth, 0);
+        }
+    }
+
+    private void OnSettingsChanged(object? sender, EventArgs e)
+    {
+        if (_disposed) return;
+        _ = Task.Run(async () =>
+        {
+            try { await ReapplyHotkeysAsync(); }
+            catch (Exception ex) { logger.LogWarning(ex, "Failed to reapply hotkeys after settings change"); }
+        });
+    }
+
+    private async Task ReapplyCoreAsync(CancellationToken ct)
+    {
         logger.LogInformation("Reapplying hotkey configuration");
 
         // Tear down current registrations. On Windows, wake the pump thread
@@ -641,6 +676,8 @@ public sealed class HotkeyManager(
     {
         if (_disposed) return;
         _disposed = true;
+        if (settingsService is not null)
+            settingsService.SettingsChanged -= OnSettingsChanged;
 
         _cts?.Cancel();
 
