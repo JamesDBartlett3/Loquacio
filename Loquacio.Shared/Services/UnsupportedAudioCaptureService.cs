@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Loquacio.Models;
 
-namespace Loquacio.Engine.Services;
+namespace Loquacio.Services;
 
 /// <summary>
 /// Fallback <see cref="IAudioCaptureService"/> for platforms without a native

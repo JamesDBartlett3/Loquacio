@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Loquacio.Models;
 
-namespace Loquacio.Engine.Services;
+namespace Loquacio.Services;
 
 /// <summary>
 /// No-op <see cref="IHotkeyService"/> for the engine context.

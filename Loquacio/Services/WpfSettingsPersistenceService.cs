@@ -108,5 +108,4 @@ public sealed class WpfControllerSettings
 
     // Engine
     public bool AutoStartEngine { get; set; } = true;
-    public bool InProcessEngine { get; set; } = false;
 }

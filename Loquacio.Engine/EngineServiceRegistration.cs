@@ -99,7 +99,7 @@ public static class EngineServiceRegistration
         // explicit "unsupported" fallback elsewhere (e.g. macOS, Phase D item 1).
         if (OperatingSystem.IsWindows())
         {
-            services.AddSingleton<IAudioCaptureService, Services.Audio.WasapiAudioCaptureService>();
+            services.AddSingleton<IAudioCaptureService, WasapiAudioCaptureService>();
         }
         else if (OperatingSystem.IsLinux())
         {
