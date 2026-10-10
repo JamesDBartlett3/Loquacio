@@ -8,6 +8,11 @@
     <AssemblyName>loquacio-avalonia</AssemblyName>
     <RootNamespace>Loquacio.Avalonia</RootNamespace>
     <IsPackable>false</IsPackable>
+    <!-- XAML in this project was written for reflection bindings (Avalonia 11 style);
+         Avalonia 12 defaults to compiled bindings with no reflection fallback, which
+         produces AVLN2100/AVLN2000 errors across existing views. Keep reflection
+         bindings until views are migrated deliberately. -->
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,23 +35,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.22" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
-    <!-- Pin transitive Tmds.DBus.Protocol to 0.21.3 (CVE-2026-39959 / GHSA-xrw6-gwf8-vvr9).
-         0.21.3 IS the patched release for the 0.21.x line (fix also shipped in 0.92.0),
-         so the pin carries the fix. Upgrading to the 0.9x line renames Connection ->
-         DBusConnection, which breaks Avalonia 11.x (compiled against the 0.2x API).
-         Exposure is low: the app only uses D-Bus as a client via Avalonia desktop
-         integration on the user session bus; the engine IPC is a private Unix-domain
-         socket, and no D-Bus service is published. Attack requires a malicious peer
-         already on the same session bus (local, same-user). Re-evaluate only when
-         Avalonia ships against the 0.9x API. -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+    <!-- Tmds.DBus.Protocol 0.9x line (CVE-2026-39959 / GHSA-xrw6-gwf8-vvr9 fix shipped
+         in 0.92.0; 0.21.3 was the patched 0.2x backport). Avalonia 12.x is compiled
+         against the 0.9x API (Connection -> DBusConnection), so the long-standing
+         0.21.3 compat pin is no longer needed and we track the fixed line directly. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.95.1" />
   </ItemGroup>
 
   <ItemGroup>
