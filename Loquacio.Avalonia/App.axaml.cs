@@ -173,6 +173,7 @@ public class App : Application
         services.AddSingleton<WhisperSettingsViewModel>();
         services.AddSingleton<LLMSettingsViewModel>();
         services.AddSingleton<VocabularySettingsViewModel>();
+        services.AddSingleton<HistoryViewModel>();
 
         // Views
         services.AddSingleton<Views.MainWindow>();

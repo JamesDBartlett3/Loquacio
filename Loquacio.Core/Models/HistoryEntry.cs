@@ -51,6 +51,11 @@ public sealed class HistoryEntry
     public string? ErrorMessage { get; set; }
 
     /// <summary>
+    /// The foreground application the dictated text was sent to (if known).
+    /// </summary>
+    public string? TargetApp { get; set; }
+
+    /// <summary>
     /// The text to display in history views (prioritizes corrected text).
     /// </summary>
     public string DisplayText => string.IsNullOrEmpty(CorrectedText) ? RawText : CorrectedText;

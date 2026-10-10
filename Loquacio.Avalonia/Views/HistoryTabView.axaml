@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Loquacio.Avalonia.ViewModels"
+             x:Class="Loquacio.Avalonia.Views.HistoryTabView"
+             x:DataType="vm:HistoryViewModel">
+    <Grid RowDefinitions="Auto,*" Margin="12">
+        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                <Button Content="Copy" Command="{Binding CopySelectedCommand}" Padding="10,4"
+                        IsEnabled="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <Button Content="Clear All" Command="{Binding ClearAllCommand}" Padding="10,4" />
+                <Button Content="Refresh" Command="{Binding LoadCommand}" Padding="10,4" />
+            </StackPanel>
+            <TextBlock Text="{Binding EntryCountText}" VerticalAlignment="Center" FontSize="12" Foreground="#a6adc8" />
+        </DockPanel>
+        <Border Grid.Row="1" Background="#181825" CornerRadius="6" Padding="8">
+            <ListBox ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}" Background="Transparent">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,3" Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}"
+                                           Foreground="#a6adc8" FontSize="11" />
+                                <TextBlock Text="{Binding DurationMs, StringFormat='{}{0} ms'}"
+                                           Foreground="#585b70" FontSize="11" />
+                                <TextBlock Text="{Binding Model}" Foreground="#89b4fa" FontSize="11" />
+                                <TextBlock Text="{Binding Language}" Foreground="#a6e3a1" FontSize="11" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" MaxWidth="700" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+    </Grid>
+</UserControl>

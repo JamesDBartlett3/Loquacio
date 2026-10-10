@@ -293,6 +293,7 @@ public class IpcServer : IAsyncDisposable
             StopListeningMessage => await DoToggleListening(sp, start: false),
             SetModeMessage mode => await DoSetMode(sp, mode.Mode, ct),
             GetHistoryMessage hist => await DoGetHistory(sp, hist),
+            ClearHistoryMessage => await DoClearHistory(sp),
             UpdateSettingsMessage settings => await DoUpdateSettings(sp, settings, ct),
             GetSettingsMessage => DoGetSettings(sp),
             GetDevicesMessage => DoGetDevices(sp),
@@ -412,6 +413,13 @@ public class IpcServer : IAsyncDisposable
             Success = true,
             Error = JsonSerializer.Serialize(entries)
         };
+    }
+
+    private static async Task<IpcMessage> DoClearHistory(IServiceProvider sp)
+    {
+        var hs = sp.GetRequiredService<IHistoryService>();
+        await hs.ClearHistoryAsync();
+        return new AckMessage { Success = true };
     }
 
     /// <summary>
@@ -705,6 +713,7 @@ public class IpcServer : IAsyncDisposable
                 "stop-listening" => JsonSerializer.Deserialize<StopListeningMessage>(line, IpcJson.Options),
                 "set-mode" => JsonSerializer.Deserialize<SetModeMessage>(line, IpcJson.Options),
                 "get-history" => JsonSerializer.Deserialize<GetHistoryMessage>(line, IpcJson.Options),
+                "clear-history" => JsonSerializer.Deserialize<ClearHistoryMessage>(line, IpcJson.Options),
                 "update-settings" => JsonSerializer.Deserialize<UpdateSettingsMessage>(line, IpcJson.Options),
                 "get-settings" => JsonSerializer.Deserialize<GetSettingsMessage>(line, IpcJson.Options),
                 "get-devices" => JsonSerializer.Deserialize<GetDevicesMessage>(line, IpcJson.Options),
