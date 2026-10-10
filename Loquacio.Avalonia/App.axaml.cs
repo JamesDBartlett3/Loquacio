@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Loquacio.Avalonia.Services;
 using Loquacio.Avalonia.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,7 @@ public class App : Application
 {
     private IServiceProvider? _services;
     private TrayService? _trayService;
+    private TrayIconViewModel? _trayVm;
     private ControllerViewModel? _vm;
     private IEngineLifecycleService? _engineLifecycle;
 
@@ -27,6 +29,7 @@ public class App : Application
         _services = ConfigureServices();
         _vm = _services.GetRequiredService<ControllerViewModel>();
         _trayService = _services.GetRequiredService<TrayService>();
+        _trayVm = _services.GetRequiredService<TrayIconViewModel>();
         _engineLifecycle = _services.GetRequiredService<IEngineLifecycleService>();
 
         // Load persisted settings before showing window
@@ -37,7 +40,8 @@ public class App : Application
             var mainWindow = _services.GetRequiredService<Views.MainWindow>();
             mainWindow.DataContext = _vm;
 
-            // Minimize-to-tray: hide window instead of closing
+            // Phase 6.2 — Minimize-to-tray:
+            // 1) Closing the window hides it instead of shutting down.
             mainWindow.Closing += (_, e) =>
             {
                 if (_vm.MinimizeToTray)
@@ -47,16 +51,26 @@ public class App : Application
                 }
             };
 
+            // 2) Minimizing the window hides it too (true tray behavior).
+            mainWindow.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == Window.WindowStateProperty &&
+                    mainWindow.WindowState == WindowState.Minimized &&
+                    _vm.MinimizeToTray)
+                {
+                    mainWindow.Hide();
+                }
+            };
+
             desktop.MainWindow = mainWindow;
 
-            // Initialize tray icon
-            _trayService.Initialize(
-                mainWindow,
-                () => Dispatcher.UIThread.InvokeAsync(async () =>
+            // Phase 6.1 — Tray icon via TrayIconViewModel
+            _trayVm = new TrayIconViewModel(
+                async () =>
                 {
                     await _vm.ToggleListeningCommand.ExecuteAsync(null);
-                    _trayService.UpdateListeningState(_vm.IsListening);
-                }),
+                    _trayVm.UpdateState(_vm.IsListening, _vm.IsConnected, _vm.StatusText);
+                },
                 () =>
                 {
                     mainWindow.Show();
@@ -69,14 +83,23 @@ public class App : Application
                     _engineLifecycle.Dispose();
                     _trayService.Dispose();
                     desktop.Shutdown();
-                });
+                },
+                _services.GetRequiredService<ILogger<TrayIconViewModel>>());
 
-            // Watch listening state for tray updates
+            _trayService.Initialize(_trayVm, mainWindow);
+
+            // Watch controller state for tray updates
+            void SyncTray() => _trayVm.UpdateState(_vm.IsListening, _vm.IsConnected, _vm.StatusText);
             _vm.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName == nameof(ControllerViewModel.IsListening))
-                    _trayService.UpdateListeningState(_vm.IsListening);
+                if (e.PropertyName is nameof(ControllerViewModel.IsListening)
+                    or nameof(ControllerViewModel.IsConnected)
+                    or nameof(ControllerViewModel.StatusText))
+                {
+                    SyncTray();
+                }
             };
+            SyncTray();
 
             // Start engine lifecycle: ensure engine is running, then connect
             _ = Task.Run(async () =>
@@ -98,6 +121,8 @@ public class App : Application
                         });
                     };
                 }
+
+                Dispatcher.UIThread.Post(SyncTray);
             });
         }
 
@@ -125,6 +150,9 @@ public class App : Application
 
         // System tray
         services.AddSingleton<TrayService>();
+        services.AddSingleton(sp => new TrayIconViewModel(
+            () => Task.CompletedTask, () => { }, () => { },
+            sp.GetRequiredService<ILogger<TrayIconViewModel>>()));
 
         // Engine lifecycle management
         services.AddSingleton<IEngineLifecycleService, EngineLifecycleService>();
