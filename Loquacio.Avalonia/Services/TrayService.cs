@@ -1,16 +1,16 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Input.Platform;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Loquacio.Avalonia.ViewModels;
 using Microsoft.Extensions.Logging;
 
 namespace Loquacio.Avalonia.Services;
 
 /// <summary>
 /// System tray integration for the Avalonia controller.
-/// Manages tray icon with context menu for quick actions.
+/// Renders the TrayIcon described by TrayIconViewModel and keeps its
+/// menu labels / tooltip in sync with controller state.
 /// </summary>
 public sealed class TrayService : IDisposable
 {
@@ -24,22 +24,24 @@ public sealed class TrayService : IDisposable
         _logger = logger;
     }
 
-    public void Initialize(Window mainWindow, Action toggleListening, Action showWindow, Action quitApp)
+    public void Initialize(TrayIconViewModel vm, Window mainWindow)
     {
         var menu = new NativeMenu();
 
         _toggleItem = new NativeMenuItem("▶ Start Dictation");
-        _toggleItem.Click += (_, _) => toggleListening();
+        // NativeMenuItem.Click is sync; post through the dispatcher so the
+        // async toggle command runs on the UI thread.
+        _toggleItem.Click += (_, _) => Dispatcher.UIThread.Post(() => vm.ToggleListeningCommand.Execute(null));
         menu.Add(_toggleItem);
 
         var showItem = new NativeMenuItem("Show Window");
-        showItem.Click += (_, _) => showWindow();
+        showItem.Click += (_, _) => Dispatcher.UIThread.Post(() => vm.ShowWindowCommand.Execute(null));
         menu.Add(showItem);
 
         menu.Add(new NativeMenuItemSeparator());
 
         var quitItem = new NativeMenuItem("Quit");
-        quitItem.Click += (_, _) => quitApp();
+        quitItem.Click += (_, _) => Dispatcher.UIThread.Post(() => vm.QuitCommand.Execute(null));
         menu.Add(quitItem);
 
         using var iconStream = AssetLoader.Open(
@@ -49,26 +51,27 @@ public sealed class TrayService : IDisposable
         {
             Icon = new WindowIcon(iconStream),
             Menu = menu,
-            ToolTipText = "Loquacio",
+            ToolTipText = vm.ToString(),
             IsVisible = true
         };
 
-        _trayIcon.Clicked += (_, _) => showWindow();
+        _trayIcon.Clicked += (_, _) => Dispatcher.UIThread.Post(() => vm.ShowWindowCommand.Execute(null));
+
+        // Keep tray tooltip / menu label in sync with the ViewModel
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (_trayIcon == null) return;
+            if (e.PropertyName == nameof(TrayIconViewModel.IsListening))
+            {
+                _toggleItem!.Header = vm.IsListening ? "⏹ Stop Dictation" : "▶ Start Dictation";
+            }
+            if (e.PropertyName == nameof(TrayIconViewModel.StatusText))
+            {
+                _trayIcon.ToolTipText = vm.ToString();
+            }
+        };
 
         _logger.LogInformation("System tray icon initialized");
-    }
-
-    public void UpdateListeningState(bool isListening)
-    {
-        if (_toggleItem != null)
-        {
-            _toggleItem.Header = isListening ? "⏹ Stop Dictation" : "▶ Start Dictation";
-        }
-
-        if (_trayIcon != null)
-        {
-            _trayIcon.ToolTipText = isListening ? "Loquacio — Listening" : "Loquacio — Idle";
-        }
     }
 
     public void Dispose()
