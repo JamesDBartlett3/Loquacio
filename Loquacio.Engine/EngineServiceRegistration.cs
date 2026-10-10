@@ -115,10 +115,15 @@ public static class EngineServiceRegistration
         // ActivationManagerService without competing for system hotkey registration.
         services.AddSingleton<IHotkeyService, NullHotkeyService>();
 
-        // X11 interop (Linux only; on Windows the HotkeyManager uses Win32 directly)
+        // Platform interop seams for HotkeyManager: X11 (XGrabKey) on Linux,
+        // Win32 (RegisterHotKey + message pump) on Windows.
         if (OperatingSystem.IsLinux())
         {
             services.AddSingleton<IX11Interop, X11Interop>();
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            services.AddSingleton<IWin32HotkeyInterop, Win32HotkeyInterop>();
         }
 
         // --- Engine-specific services ---

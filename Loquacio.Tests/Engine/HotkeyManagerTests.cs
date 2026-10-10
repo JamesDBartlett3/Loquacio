@@ -25,6 +25,178 @@ public class HotkeyManagerTests
     private HotkeyManager CreateManager() =>
         new(_activation, _configuration, _logger, _x11Interop);
 
+    // ── Win32 seam tests (run on any OS; user32.dll is never touched) ──
+
+    /// <summary>
+    /// Fake Win32 interop: RegisterHotKey succeeds, GetMessage returns one
+    /// WM_HOTKEY then WM_QUIT so the pump exits cleanly.
+    /// </summary>
+    private sealed class FakeWin32Interop : IWin32HotkeyInterop
+    {
+        public List<(IntPtr hwnd, int id, uint mods, uint vk)> Registered { get; } = [];
+        public List<int> Unregistered { get; } = [];
+        public IntPtr Window { get; set; } = (IntPtr)0x42;
+        public bool WindowCreated { get; private set; }
+        public bool WindowDestroyed { get; private set; }
+        public bool RegisterSucceeds { get; set; } = true;
+        public bool Destroyed { get; private set; }
+        public Func<uint>? ThreadId { get; set; }
+        private MSG? _pendingHotkey;
+
+        public IntPtr GetModuleHandle(string? moduleName) => (IntPtr)0x10;
+
+        public IntPtr CreateMessageOnlyWindow(string className)
+        {
+            WindowCreated = true;
+            return Window;
+        }
+
+        public bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint virtualKey)
+        {
+            if (!RegisterSucceeds) return false;
+            Registered.Add((hwnd, id, modifiers, virtualKey));
+            return true;
+        }
+
+        public bool UnregisterHotKey(IntPtr hwnd, int id)
+        {
+            Unregistered.Add(id);
+            return true;
+        }
+
+        public bool DestroyWindow(IntPtr hwnd) { WindowDestroyed = true; return true; }
+
+        public int GetMessage(out MSG msg, IntPtr hwnd, uint filterMin, uint filterMax)
+        {
+            if (_pendingHotkey is not null)
+            {
+                msg = _pendingHotkey.Value;
+                _pendingHotkey = null;
+                return 1;
+            }
+            // WM_QUIT → pump exits
+            msg = default;
+            return 0;
+        }
+
+        public bool TranslateMessage(ref MSG msg) => false;
+        public IntPtr DispatchMessage(ref MSG msg) => IntPtr.Zero;
+
+        public bool PostThreadMessage(uint threadId, uint msg, IntPtr wParam, IntPtr lParam)
+        {
+            if (msg == 0x0012) Destroyed = true; // WM_QUIT requested
+            return true;
+        }
+
+        public uint GetCurrentThreadId() => ThreadId?.Invoke() ?? 1234u;
+
+        public void QueueHotkey(int id) => _pendingHotkey = new MSG
+        {
+            hWnd = Window,
+            message = 0x0312, // WM_HOTKEY
+            wParam = (IntPtr)id,
+        };
+    }
+
+    private static async Task<bool> WaitForAsync(Func<bool> condition, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (condition()) return true;
+            await Task.Delay(25);
+        }
+        return condition();
+    }
+
+    private static async Task<bool> WaitForAsync(Func<Task<bool>> condition, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (await condition()) return true;
+            await Task.Delay(25);
+        }
+        return await condition();
+    }
+
+    private static HotkeyManager CreateWin32Manager(
+        IActivationManagerService activation,
+        FakeWin32Interop win32,
+        IConfiguration? config = null) =>
+        new(activation, config ?? new ConfigurationBuilder().Build(),
+            Substitute.For<ILogger<HotkeyManager>>(), x11Interop: null, win32Interop: win32,
+            forcePlatform: "windows");
+
+    [Fact]
+    public async Task Win32_RegistersConfiguredHotkeys_ViaSeam()
+    {
+        var win32 = new FakeWin32Interop();
+        var manager = CreateWin32Manager(_activation, win32);
+
+        await manager.InitializeAsync();
+
+        // Registration happens on the pump thread — wait for it.
+        Assert.True(await WaitForAsync(() => win32.Registered.Count == 2, TimeSpan.FromSeconds(5)),
+            "Expected 2 hotkey registrations");
+
+        // Default hotkeys: Ctrl+Alt+F1 and Ctrl+Shift+Space → 2 registrations
+        Assert.Equal(2, win32.Registered.Count);
+        Assert.True(win32.WindowCreated);
+        manager.Dispose();
+
+        // All registrations must be released on dispose
+        Assert.Equal(win32.Registered.Select(r => r.id), win32.Unregistered);
+        Assert.True(win32.WindowDestroyed);
+    }
+
+    [Fact]
+    public async Task Win32_RegisterHotKeyConflict_SkipsAndDoesNotThrow()
+    {
+        var win32 = new FakeWin32Interop { RegisterSucceeds = false };
+        var manager = CreateWin32Manager(_activation, win32);
+
+        await manager.InitializeAsync();
+
+        Assert.Empty(win32.Registered);
+        manager.Dispose();
+        Assert.Empty(win32.Unregistered);
+    }
+
+    [Fact]
+    public async Task Win32_WmHotkeyMessage_TogglesListening()
+    {
+        var win32 = new FakeWin32Interop();
+        var activation = Substitute.For<IActivationManagerService>();
+        win32.QueueHotkey(id: 0); // first registered hotkey → "toggle"
+        var manager = CreateWin32Manager(activation, win32);
+
+        await manager.InitializeAsync();
+        // Wait for the pump thread to deliver the queued WM_HOTKEY
+        Assert.True(await WaitForAsync(async () =>
+            (await Task.Run(() => activation.ReceivedCalls()))
+                .Any(c => c.GetMethodInfo().Name == "ToggleListeningAsync"), TimeSpan.FromSeconds(5)),
+            "Expected ToggleListeningAsync to be dispatched");
+
+        await activation.Received(1).ToggleListeningAsync();
+        manager.Dispose();
+    }
+
+    [Fact]
+    public async Task Win32_Dispose_PostsWmQuit_AndCleansUp()
+    {
+        var win32 = new FakeWin32Interop();
+        var manager = CreateWin32Manager(_activation, win32);
+
+        await manager.InitializeAsync();
+        Assert.True(await WaitForAsync(() => win32.Registered.Count == 2, TimeSpan.FromSeconds(5)));
+        manager.Dispose();
+
+        Assert.True(await WaitForAsync(() => win32.Destroyed, TimeSpan.FromSeconds(5))); // WM_QUIT posted
+        Assert.Equal(win32.Registered.Select(r => r.id), win32.Unregistered);
+        Assert.True(win32.WindowDestroyed);
+    }
+
     [Fact]
     public async Task InitializeAsync_CompletesWithoutError()
     {
