@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Loquacio.Avalonia.Services;
+using Loquacio.Services;
 
 namespace Loquacio.Avalonia.ViewModels;
 
@@ -15,6 +16,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
     private readonly IEngineProxy _engine;
     private readonly IDispatcherService _dispatcher;
     private readonly SettingsPersistenceService _settings;
+    private readonly IAutoStartService? _autoStart;
     private readonly ILogger<ControllerViewModel> _logger;
     private bool _disposed;
     private bool _initialized;
@@ -68,8 +70,10 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         LLMSettingsViewModel llm,
         VocabularySettingsViewModel vocabulary,
         SettingsPersistenceService settings,
-        ILogger<ControllerViewModel> logger)
+        ILogger<ControllerViewModel> logger,
+        IAutoStartService? autoStart = null)
     {
+        _autoStart = autoStart;
         _engine = engine;
         _dispatcher = dispatcher;
         _settings = settings;
@@ -95,6 +99,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         General.Keyword = s.Keyword;
         General.OutputMode = s.OutputMode;
         General.NotificationsEnabled = s.NotificationsEnabled;
+        General.StartWithWindows = s.StartWithWindows;
 
         Audio.SelectedDeviceId = s.SelectedDeviceId;
         Audio.Gain = s.Gain;
@@ -137,8 +142,19 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
             LlmModel = LLM.Model,
             CustomWords = Vocabulary.CustomWords.ToList(),
             MinimizeToTray = MinimizeToTray,
+            StartWithWindows = General.StartWithWindows,
         };
         _settings.Save(s);
+
+        // Phase 6.3 — keep the HKCU Run key in sync with the setting.
+        if (_autoStart != null)
+        {
+            switch (AutoStartPolicy.ComputeTransition(General.StartWithWindows, _autoStart.IsEnabled))
+            {
+                case true: _autoStart.Enable(); break;
+                case false: _autoStart.Disable(); break;
+            }
+        }
     }
 
     public async Task InitializeAsync(IEngineLifecycleService? lifecycleService = null)

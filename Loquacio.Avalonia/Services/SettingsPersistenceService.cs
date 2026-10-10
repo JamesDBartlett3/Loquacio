@@ -95,4 +95,7 @@ public sealed class AvaloniaSettings
     public double WindowWidth { get; set; } = 800;
     public double WindowHeight { get; set; } = 600;
     public bool MinimizeToTray { get; set; } = true;
+
+    // Startup
+    public bool StartWithWindows { get; set; } = false;
 }
