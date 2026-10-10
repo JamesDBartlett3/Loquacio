@@ -154,6 +154,9 @@ public class App : Application
             () => Task.CompletedTask, () => { }, () => { },
             sp.GetRequiredService<ILogger<TrayIconViewModel>>()));
 
+        // Phase 6.3 — auto-start with Windows (HKCU Run key)
+        services.AddSingleton<Loquacio.Services.IAutoStartService, Loquacio.Services.RegistryAutoStartService>();
+
         // Engine lifecycle management
         services.AddSingleton<IEngineLifecycleService, EngineLifecycleService>();
 

@@ -74,6 +74,7 @@
                           Grid.Column="1" />
             </Grid>
             <CheckBox Content="Show notifications" IsChecked="{Binding NotificationsEnabled}" />
+            <CheckBox Content="Start with Windows" IsChecked="{Binding StartWithWindows}" />
         </StackPanel>
 
     </StackPanel>

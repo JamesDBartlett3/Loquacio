@@ -25,6 +25,10 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _notificationsEnabled = true;
 
+    /// <summary>Phase 6.3 — register/unregister HKCU Run key on save.</summary>
+    [ObservableProperty]
+    private bool _startWithWindows;
+
     [ObservableProperty]
     private bool _isRecordingHotkey;
 
