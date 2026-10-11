@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+         IgnorableNamespaces="uap rescap">
+
+  <Identity Name="Innovation.Loquacio"
+            Publisher="CN=Loquacio"
+            Version="1.0.0.0" />
+
+  <Properties>
+    <DisplayName>Loquacio</DisplayName>
+    <PublisherDisplayName>Loquacio</PublisherDisplayName>
+    <Logo>assets\StoreLogo.png</Logo>
+    <Description>Voice dictation app using Whisper AI for accurate transcription</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop"
+                        MinVersion="10.0.22621.0"
+                        MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="Loquacio"
+                 Executable="loquacio-avalonia.exe"
+                 EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="Loquacio"
+                          Square150x150Logo="assets\Square150x150Logo.png"
+                          Square44x44Logo="assets\Square44x44Logo.png"
+                          Description="Voice dictation using Whisper AI"
+                          BackgroundColor="transparent"
+                          AppListEntry="default">
+        <uap:DefaultTile Wide310x150Logo="assets\Wide310x150Logo.png"
+                          Square71x71Logo="assets\SmallTile.png"
+                          Square310x310Logo="assets\LargeTile.png" />
+        <uap:SplashScreen Image="assets\SplashScreen.png" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="loquacio">
+            <uap:DisplayName>Loquacio Protocol</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+
+        <!-- Auto-start via MSIX StartupTask (replaces registry-based auto-start
+             from the unpackaged Phase 6.3 feature) -->
+        <uap:Extension Category="windows.startupTask">
+          <uap:StartupTask TaskId="LoquacioStartup"
+                           Enabled="false"
+                           DisplayName="Loquacio"
+                           Description="Starts Loquacio when you sign in to Windows." />
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <Capability Name="internetClient" />
+    <DeviceCapability Name="microphone" />
+  </Capabilities>
+
+</Package>
