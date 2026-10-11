@@ -403,6 +403,13 @@ When adding new packaging options:
 4. Test on target platform
 5. Add to CI/CD if possible
 
+## MSIX (Phase 6.5)
+
+- `Package.appxmanifest` + `Loquacio.Package.wapproj` (Windows App SDK 1.6, `WindowsAppSDKSelfContained=true`) live at the repo root.
+- Build on a **Windows** host with `build-msix.ps1` (needs .NET 10 SDK + Windows SDK; see script header). Signing is optional via `-Sign -CertPath ...`.
+- On Linux/CI, `Loquacio.Tests/Packaging/AppxManifestTests.cs` validates manifest structure, identity, capabilities, StartupTask extension, and asset references so packaging regressions surface without a Windows host.
+- Actual install/run/uninstall verification (PLAN 6.5 gate) still requires a Windows 10/11 machine.
+
 ## License
 
 All packaging scripts and specifications follow the same license as the main project.
