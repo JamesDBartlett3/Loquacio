@@ -20,6 +20,7 @@ public class ControllerViewModelTests : IDisposable
     private readonly string _tempSettingsPath;
 
     private readonly AckMessage _ack = new();
+    private readonly List<Settings> engineSettingsSnapshots = new();
 
     public ControllerViewModelTests()
     {
@@ -145,6 +146,59 @@ public class ControllerViewModelTests : IDisposable
         });
         Assert.Single(_vm.TranscriptionHistory);
         Assert.Equal("Hello world", _vm.TranscriptionHistory[0].Text);
+    }
+
+    [Fact]
+    public async Task SaveSettings_WhenConnected_PushesMergedSettingsToEngine()
+    {
+        _vm.Audio.Gain = 2.5;
+        _vm.Audio.SilenceThresholdMs = 2500;
+        _vm.Whisper.Language = "en";
+        _vm.LLM.Enabled = false;
+        _vm.LLM.Provider = "ollama";
+        _vm.General.ActivationMode = "Push-to-Talk";
+        _vm.General.Keyword = "Hey Computer";
+        _vm.General.KeywordEnabled = true;
+        _vm.General.HotkeyDisplay = "Ctrl+Shift+Space";
+        _vm.General.OutputMode = "clipboard";
+        _vm.Vocabulary.CustomWords.Add("Loquacio");
+
+        // Engine snapshot carries engine-side-only state that must survive the merge.
+        var engineSnapshot = new Settings();
+        engineSnapshot.Whisper.ModelPath = "/models/base.bin";
+        _engine.GetSettingsAsync(Arg.Any<CancellationToken>())
+            .ReturnsForAnyArgs(Task.FromResult<Settings?>(engineSnapshot));
+
+        _vm.SaveSettings();
+        // fire-and-forget push — allow it to complete
+        await Task.Delay(200);
+
+        await _engine.Received(1).UpdateSettingsAsync(
+            Arg.Is<Settings>(s =>
+                s.Audio.Gain == 2.5 &&
+                s.Audio.SilenceThresholdMs == 2500 &&
+                s.Whisper.Language == "en" &&
+                s.Whisper.ModelPath == "/models/base.bin" &&
+                s.LLM.Enabled == false &&
+                s.LLM.Provider == "ollama" &&
+                s.Activation.Mode == "push-to-talk" &&
+                s.Activation.Keyword == "Hey Computer" &&
+                s.Activation.KeywordEnabled &&
+                s.Activation.Hotkey == "Ctrl+Shift+Space" &&
+                s.Output.Mode == "clipboard" &&
+                s.Vocabulary.CustomWords.Contains("Loquacio")),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SaveSettings_WhenDisconnected_DoesNotPushToEngine()
+    {
+        _engine.IsConnected.Returns(false);
+
+        _vm.SaveSettings();
+        await Task.Delay(200);
+
+        await _engine.DidNotReceiveWithAnyArgs().UpdateSettingsAsync(default!, default);
     }
 }
 

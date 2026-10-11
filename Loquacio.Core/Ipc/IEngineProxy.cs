@@ -1,5 +1,7 @@
 namespace Loquacio.Ipc;
 
+using Loquacio.Models;
+
 /// <summary>
 /// Interface for controllers to communicate with the engine.
 /// The engine implements this; controllers call it.
@@ -30,6 +32,21 @@ public interface IEngineProxy : IDisposable
     /// Cancel the currently active dictation run (no-op success when idle).
     /// </summary>
     Task<AckMessage> CancelDictationAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Fetch the engine's current full settings snapshot.
+    /// </summary>
+    Task<Settings?> GetSettingsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Push a full settings object to the engine (all sections).
+    /// </summary>
+    Task<AckMessage> UpdateSettingsAsync(Settings settings, CancellationToken ct = default);
+
+    /// <summary>
+    /// Push a single settings section to the engine (section name, e.g. "audio").
+    /// </summary>
+    Task<AckMessage> UpdateSettingsSectionAsync(string section, object value, CancellationToken ct = default);
 
     /// <summary>
     /// Subscribe to status updates. The callback fires on each status/transcription message.

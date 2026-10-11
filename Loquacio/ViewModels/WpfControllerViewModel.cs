@@ -168,7 +168,7 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
         {
             // The tab VM already persisted to the local settings store; push the
             // same settings to the engine so they take effect there immediately.
-            if (_engine is EngineProxy proxy && proxy.IsConnected)
+            if (_engine.IsConnected)
             {
                 var settings = await _engineSettingsService.GetSettingsAsync();
                 var (section, value) = sender switch
@@ -181,8 +181,8 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
                     _ => (string.Empty, (object?)null)
                 };
                 var ack = string.IsNullOrEmpty(section)
-                    ? await proxy.UpdateSettingsAsync(settings)
-                    : await proxy.UpdateSettingsSectionAsync(section, value!);
+                    ? await _engine.UpdateSettingsAsync(settings)
+                    : await _engine.UpdateSettingsSectionAsync(section, value!);
                 if (!ack.Success)
                     _logger.LogWarning("Engine rejected settings update: {Error}", ack.Error);
                 else if (section == "whisper")
@@ -295,19 +295,19 @@ public partial class WpfControllerViewModel : ObservableObject, IDisposable
             });
 
             // Reflect engine-side model status in the dashboard banner
-            if (_engine is EngineProxy p && p.IsConnected)
+            if (_engine.IsConnected)
             {
-                var snapshot = await p.GetSettingsAsync();
+                var snapshot = await _engine.GetSettingsAsync();
                 var localSettings = await _engineSettingsService.GetSettingsAsync();
                 if (!string.IsNullOrWhiteSpace(localSettings.Whisper.ModelPath)
                     && !string.Equals(localSettings.Whisper.ModelPath,
                         snapshot?.Whisper.ModelPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    var ack = await p.UpdateSettingsSectionAsync("whisper", localSettings.Whisper);
+                    var ack = await _engine.UpdateSettingsSectionAsync("whisper", localSettings.Whisper);
                     if (!ack.Success)
                         _logger.LogWarning("Failed to synchronize model settings with engine: {Error}", ack.Error);
                     else
-                        snapshot = await p.GetSettingsAsync();
+                        snapshot = await _engine.GetSettingsAsync();
                 }
                 if (snapshot is not null)
                 {

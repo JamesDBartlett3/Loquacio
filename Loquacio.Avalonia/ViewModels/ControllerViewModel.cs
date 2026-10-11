@@ -159,7 +159,57 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
                 case false: _autoStart.Disable(); break;
             }
         }
+
+        // Parity with the WPF controller: push the user's changes to the engine
+        // so they take effect immediately (settings live engine-side).
+        _ = PushSettingsToEngineAsync();
     }
+
+    /// <summary>
+    /// Push the controller's current settings to the engine via IPC. Local values
+    /// are merged onto the engine's live snapshot so engine-side-only settings
+    /// (e.g. Whisper.ModelPath, Pipeline, Tray) are never clobbered.
+    /// </summary>
+    private async Task PushSettingsToEngineAsync()
+    {
+        if (_disposed) return;
+        try
+        {
+            if (!_engine.IsConnected) return;
+            var engineSettings = await _engine.GetSettingsAsync();
+            if (engineSettings == null) return;
+
+            engineSettings.Audio.DeviceId = Audio.SelectedDeviceId;
+            engineSettings.Audio.Gain = Audio.Gain;
+            engineSettings.Audio.SilenceThresholdMs = Audio.SilenceThresholdMs;
+            engineSettings.Whisper.Language = Whisper.Language;
+            engineSettings.LLM.Enabled = LLM.Enabled;
+            engineSettings.LLM.Provider = LLM.Provider;
+            engineSettings.LLM.Endpoint = LLM.Endpoint;
+            engineSettings.LLM.Model = LLM.Model;
+            engineSettings.Activation.Mode = ToEngineMode(General.ActivationMode);
+            engineSettings.Activation.KeywordEnabled = General.KeywordEnabled;
+            engineSettings.Activation.Keyword = General.Keyword;
+            engineSettings.Activation.Hotkey = General.HotkeyDisplay;
+            engineSettings.Vocabulary.CustomWords = Vocabulary.CustomWords.ToList();
+            engineSettings.Output.Mode = General.OutputMode;
+
+            var ack = await _engine.UpdateSettingsAsync(engineSettings);
+            if (!ack.Success)
+                _logger.LogWarning("Engine rejected settings update: {Error}", ack.Error);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to push settings to engine");
+        }
+    }
+
+    private static string ToEngineMode(string? displayMode) =>
+        displayMode?.Trim().ToLowerInvariant() switch
+        {
+            "push-to-talk" or "pushtotalk" or "ptt" => "push-to-talk",
+            _ => "continuous",
+        };
 
     public async Task InitializeAsync(IEngineLifecycleService? lifecycleService = null)
     {
