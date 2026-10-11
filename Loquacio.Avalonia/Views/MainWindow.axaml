@@ -98,6 +98,11 @@
                 </Grid>
             </TabItem>
 
+            <!-- History Tab (Phase 6.4) -->
+            <TabItem Header="History">
+                <views:HistoryTabView DataContext="{Binding History}" />
+            </TabItem>
+
             <!-- General Settings Tab -->
             <TabItem Header="General">
                 <views:GeneralTabView DataContext="{Binding General}" Margin="12" />

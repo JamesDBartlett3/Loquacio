@@ -18,12 +18,12 @@ public sealed class HistoryService : IHistoryService, IAsyncDisposable
     private List<HistoryEntry> _history = [];
     private bool _disposed;
 
-    public HistoryService(ILogger<HistoryService> logger)
+    public HistoryService(ILogger<HistoryService> logger, string? historyDirectory = null)
     {
         _logger = logger;
 
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var appFolder = Path.Combine(appData, "Loquacio");
+        var appFolder = historyDirectory ?? Path.Combine(appData, "Loquacio");
         Directory.CreateDirectory(appFolder);
 
         _historyFilePath = Path.Combine(appFolder, HistoryFileName);
@@ -42,7 +42,8 @@ public sealed class HistoryService : IHistoryService, IAsyncDisposable
                 try
                 {
                     var json = await File.ReadAllTextAsync(_historyFilePath);
-                    _history = JsonSerializer.Deserialize<List<HistoryEntry>>(json) ?? [];
+                    var opts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true };
+                    _history = JsonSerializer.Deserialize<List<HistoryEntry>>(json, opts) ?? [];
                     _logger.LogInformation("Loaded {Count} history entries from disk", _history.Count);
                 }
                 catch (Exception ex)

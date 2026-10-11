@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Loquacio.Avalonia.Services;
 using Loquacio.Services;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Loquacio.Avalonia.ViewModels;
 
@@ -26,6 +27,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
     public WhisperSettingsViewModel Whisper { get; }
     public LLMSettingsViewModel LLM { get; }
     public VocabularySettingsViewModel Vocabulary { get; }
+    public HistoryViewModel History { get; }
 
     [ObservableProperty]
     private string _statusText = "Connecting…";
@@ -71,7 +73,8 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         VocabularySettingsViewModel vocabulary,
         SettingsPersistenceService settings,
         ILogger<ControllerViewModel> logger,
-        IAutoStartService? autoStart = null)
+        IAutoStartService? autoStart = null,
+        HistoryViewModel? history = null)
     {
         _autoStart = autoStart;
         _engine = engine;
@@ -84,6 +87,7 @@ public partial class ControllerViewModel : ObservableObject, IDisposable
         Whisper = whisper;
         LLM = llm;
         Vocabulary = vocabulary;
+        History = history!;
 
         _engine.Disconnected += OnEngineDisconnected;
     }

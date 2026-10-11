@@ -203,3 +203,11 @@ public class AckMessage : IpcMessage
     public bool Success { get; set; }
     public string? Error { get; set; }
 }
+
+/// <summary>
+/// Clear the entire persisted transcription history.
+/// </summary>
+public class ClearHistoryMessage : IpcMessage
+{
+    public override string MessageType => "clear-history";
+}

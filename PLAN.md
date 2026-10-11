@@ -302,7 +302,7 @@ This plan breaks down the Loquacio implementation into 6 phases over 4 innovatio
 **Verification:** App launches on Windows login when enabled.
 
 #### 6.4 History Log
-- [ ] Implement `HistoryService`:
+- [x] Implement `HistoryService`:
   - Save all processed segments to `history.json`
   - Limit to last 1000 entries (rotate)
   - Provide history viewer in UI
