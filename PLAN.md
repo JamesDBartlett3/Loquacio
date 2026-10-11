@@ -310,10 +310,11 @@ This plan breaks down the Loquacio implementation into 6 phases over 4 innovatio
 **Verification:** History persists, viewer loads correctly.
 
 #### 6.5 MSIX Packaging
-- [ ] Add Windows App SDK package project
-- [ ] Configure manifest (app identity, capabilities, min version)
-- [ ] Self-contained .NET 8 runtime (no user install)
+- [x] Add Windows App SDK package project
+- [x] Configure manifest (app identity, capabilities, min version)
+- [ ] Self-contained .NET runtime (WindowsAppSDKSelfContained=true set in Loquacio.Package.wapproj; verify on a Windows host)
 - [ ] Test installation/uninstallation on Windows 11
+- [x] Cross-platform manifest validation tests (Loquacio.Tests/Packaging/AppxManifestTests.cs)
 
 **Verification:** MSIX installs, runs, uninstalls cleanly.
 
