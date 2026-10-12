@@ -195,6 +195,15 @@ TestConsole/         # Windows-only test harness
 CrossPlatformTestConsole/, SimpleCrossPlatformTestConsole/  # Console test harnesses
 ```
 
+## Continuous Integration
+
+Two workflow definitions serve the two remotes — exactly one fires per push on each:
+
+| File | Platform | What it does |
+|------|----------|--------------|
+| `.forgejo/workflows/ci.yml` | Forgejo (self-hosted) | Shell-only build on the `ubuntu-latest` (`python:3.12`) runner: token-clone checkout, in-job .NET 10 SDK install, restore, linux-x64 publish (engine + Avalonia + TUI), tests. Triggers on pushes/tags to `main` and PRs against `main`. |
+| `.github/workflows/build.yml` | GitHub (mirror) | 3-OS matrix build + draft releases on GitHub-hosted runners. Its jobs are guarded with `if: github.server_url == 'https://github.com'` so they skip instantly on Forgejo (which also discovers `.github/workflows/`). |
+
 ## Development Phases
 
 | Phase | Status | Description |
