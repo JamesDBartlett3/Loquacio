@@ -46,7 +46,9 @@ jobs:
             git checkout --force FETCH_HEAD
           fi
           git log --oneline -3
-          git describe --tags --abbrev=0
+          # Informational: the repo may have no tags yet on Forgejo (the
+          # publish step falls back to version 0.0.0 in that case).
+          git describe --tags --abbrev=0 2>/dev/null || echo "(no tags yet — version falls back to 0.0.0)"
 
       - name: Verify internet access from job container
         run: |
