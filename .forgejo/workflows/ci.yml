@@ -8,6 +8,12 @@
 #     host-gateway alias; job containers cannot reach localhost:3001)
 #   * .NET 10 SDK installed in-job via the official dotnet-install script
 #
+# All three RID legs build on the single Linux runner: .NET cross-compiles
+# win-x64 and osx-x64 from Linux, and the WPF controller compiles there too
+# via EnableWindowsTargeting=true (Directory.Build.props). Only what must RUN
+# on the target OS stays GitHub-only: the test run (Linux binaries) and the
+# macOS .app bundle (packaging/macos/build-app.sh refuses to run off Darwin).
+#
 # The GitHub mirror keeps its 3-OS workflow in .github/workflows/build.yml.
 # Forgejo also discovers .github/workflows/, so that file's jobs are guarded
 # with `if: github.server_url == 'https://github.com'` — they stay dormant
@@ -22,7 +28,7 @@ on:
     branches: [main]
 
 jobs:
-  linux-x64:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (token-clone, full history for git describe)
@@ -66,15 +72,18 @@ jobs:
           echo "DOTNET_ROOT=$HOME/.dotnet" >> "$GITHUB_ENV"
           echo "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> "$GITHUB_ENV"
 
+      - name: Compute version
+        run: |
+          set -euo pipefail
+          BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
+          echo "NUGET_VERSION=${BASE#v}+$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
       - name: Restore
         run: dotnet restore Loquacio.slnx
 
       - name: Publish (linux-x64 engine + Avalonia + TUI)
         run: |
           set -euo pipefail
-          BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
-          SHORT_HASH="$(git rev-parse --short HEAD)"
-          NUGET_VERSION="${BASE#v}+${SHORT_HASH}"
           echo "Building version $NUGET_VERSION"
           for PROJECT in \
             Loquacio.Engine/Loquacio.Engine.csproj \
@@ -87,5 +96,38 @@ jobs:
           done
           ls dist/publish/linux-x64 | head -20
 
-      - name: Test
+      - name: Test (Linux binaries)
         run: dotnet test Loquacio.Tests/Loquacio.Tests.csproj --no-restore --configuration Release
+
+      - name: Publish (win-x64 engine + WPF + TUI, cross-compiled from Linux)
+        run: |
+          set -euo pipefail
+          # Same project set as the GitHub workflow's win-x64 leg. WPF
+          # compiles on Linux via EnableWindowsTargeting but the binaries only
+          # run on Windows, so there is no test step for these RIDs.
+          for PROJECT in \
+            Loquacio.Engine/Loquacio.Engine.csproj \
+            Loquacio/Loquacio.csproj \
+            Loquacio.Tui/Loquacio.Tui.csproj; do
+            dotnet publish "$PROJECT" \
+              -c Release -r win-x64 --self-contained true \
+              -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
+              -o "dist/publish/win-x64"
+          done
+          ls dist/publish/win-x64 | head -20
+
+      - name: Publish (osx-x64 engine + TUI, cross-compiled from Linux)
+        run: |
+          set -euo pipefail
+          # Same project set as the GitHub workflow's osx-x64 leg. The .app
+          # bundle (packaging/macos/build-app.sh) requires macOS and stays
+          # GitHub-only, as do the release ZIPs.
+          for PROJECT in \
+            Loquacio.Engine/Loquacio.Engine.csproj \
+            Loquacio.Tui/Loquacio.Tui.csproj; do
+            dotnet publish "$PROJECT" \
+              -c Release -r osx-x64 --self-contained true \
+              -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
+              -o "dist/publish/osx-x64"
+          done
+          ls dist/publish/osx-x64 | head -20
