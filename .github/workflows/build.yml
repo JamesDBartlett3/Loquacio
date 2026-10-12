@@ -1,3 +1,13 @@
+# GitHub Actions build for the github.com mirror (3-OS matrix, hosted runners,
+# JS actions, gh-release publishing).
+#
+# Forgejo ALSO discovers .github/workflows/, but this instance has no
+# macOS/Windows runners and its Linux job image has no Node (JS actions fail),
+# so without the guard below every push would produce failures here and legs
+# stuck in queue. The Forgejo-native CI lives in .forgejo/workflows/ci.yml.
+# The job guard is evaluated at planning time: on Forgejo (server_url is the
+# local instance) both jobs are skipped immediately — nothing queues, nothing
+# fails; on GitHub (server_url == https://github.com) behavior is unchanged.
 name: Build Packages
 
 on:
@@ -10,6 +20,7 @@ on:
 
 jobs:
   build:
+    if: github.server_url == 'https://github.com'
     strategy:
       fail-fast: false
       matrix:
@@ -97,7 +108,7 @@ jobs:
 
   release:
     needs: build
-    if: github.event_name == 'push'
+    if: github.server_url == 'https://github.com' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write

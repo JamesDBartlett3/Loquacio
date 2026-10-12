@@ -1,0 +1,91 @@
+# Loquacio CI on the self-hosted Forgejo instance (elitedesk-ci runner).
+#
+# The instance's runner exposes the label "ubuntu-latest:docker://python:3.12".
+# The stock python image has git and curl but no Node, so remote JS actions
+# (actions/checkout, actions/setup-dotnet, ...) cannot run — every step here
+# is plain shell:
+#   * checkout via token-clone against http://forgejo:3001 (the runner's
+#     host-gateway alias; job containers cannot reach localhost:3001)
+#   * .NET 10 SDK installed in-job via the official dotnet-install script
+#
+# The GitHub mirror keeps its 3-OS workflow in .github/workflows/build.yml.
+# Forgejo also discovers .github/workflows/, so that file's jobs are guarded
+# with `if: github.server_url == 'https://github.com'` — they stay dormant
+# here and only run on GitHub.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (token-clone, full history for git describe)
+        run: |
+          set -euo pipefail
+          git clone "http://forgejo:$GITHUB_TOKEN@forgejo:3001/$GITHUB_REPOSITORY.git" .
+          echo "event=$GITHUB_EVENT_NAME ref=$GITHUB_REF ref_name=$GITHUB_REF_NAME sha=$GITHUB_SHA"
+          # For PR runs, check out the PR head. GITHUB_REF on Forgejo pull_request
+          # events is refs/pull/<n>/merge; the underlying refs/pull/<n>/head is a
+          # plain ref, so it fetches without SHA-want support.
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            PRNUM="$(printf '%s' "$GITHUB_REF" | sed -nE 's#^refs/pull/([0-9]+).*#\1#p')"
+            if [ -z "$PRNUM" ] && [ -n "${GITHUB_EVENT_PATH:-}" ]; then
+              PRNUM="$(python3 -c "import json,os;print((json.load(open(os.environ['GITHUB_EVENT_PATH'])).get('pull_request') or {}).get('number',''))")"
+            fi
+            if [ -z "$PRNUM" ]; then
+              echo "pull_request event but no PR number resolved" >&2
+              exit 1
+            fi
+            git fetch origin "+refs/pull/$PRNUM/head"
+            git checkout --force FETCH_HEAD
+          fi
+          git log --oneline -3
+          # Informational: the repo may have no tags yet on Forgejo (the
+          # publish step falls back to version 0.0.0 in that case).
+          git describe --tags --abbrev=0 2>/dev/null || echo "(no tags yet — version falls back to 0.0.0)"
+
+      - name: Verify internet access from job container
+        run: |
+          set -euo pipefail
+          curl -fsSI https://dot.net -o /dev/null
+          echo "Internet reachable"
+
+      - name: Install .NET 10 SDK
+        run: |
+          set -euo pipefail
+          curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+          chmod +x /tmp/dotnet-install.sh
+          /tmp/dotnet-install.sh --channel 10.0 --install-dir "$HOME/.dotnet"
+          echo "$HOME/.dotnet" >> "$GITHUB_PATH"
+          echo "DOTNET_ROOT=$HOME/.dotnet" >> "$GITHUB_ENV"
+          echo "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> "$GITHUB_ENV"
+
+      - name: Restore
+        run: dotnet restore Loquacio.slnx
+
+      - name: Publish (linux-x64 engine + Avalonia + TUI)
+        run: |
+          set -euo pipefail
+          BASE="$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)"
+          SHORT_HASH="$(git rev-parse --short HEAD)"
+          NUGET_VERSION="${BASE#v}+${SHORT_HASH}"
+          echo "Building version $NUGET_VERSION"
+          for PROJECT in \
+            Loquacio.Engine/Loquacio.Engine.csproj \
+            Loquacio.Avalonia/Loquacio.Avalonia.csproj \
+            Loquacio.Tui/Loquacio.Tui.csproj; do
+            dotnet publish "$PROJECT" \
+              -c Release -r linux-x64 --self-contained true \
+              -p:PublishSingleFile=false -p:Version="$NUGET_VERSION" \
+              -o "dist/publish/linux-x64"
+          done
+          ls dist/publish/linux-x64 | head -20
+
+      - name: Test
+        run: dotnet test Loquacio.Tests/Loquacio.Tests.csproj --no-restore --configuration Release
