@@ -201,8 +201,10 @@ Two workflow definitions serve the two remotes — exactly one fires per push on
 
 | File | Platform | What it does |
 |------|----------|--------------|
-| `.forgejo/workflows/ci.yml` | Forgejo (self-hosted) | Shell-only build on the `ubuntu-latest` (`python:3.12`) runner: token-clone checkout, in-job .NET 10 SDK install, restore, then all three RID legs cross-compiled from Linux — linux-x64 (engine + Avalonia + TUI), win-x64 (engine + WPF + TUI), osx-x64 (engine + TUI) — plus the Linux test run. Linux-only extras (macOS `.app` bundling, release ZIPs) stay in the GitHub workflow. Triggers on pushes/tags to `main` and PRs against `main`. |
+| `.forgejo/workflows/ci.yml` | Forgejo (self-hosted) | Shell-only build on the `ubuntu-latest` (`python:3.12`) runner: token-clone checkout, in-job .NET 10 SDK install, restore, then all three RID legs cross-compiled from Linux — linux-x64 (engine + Avalonia + TUI), win-x64 (engine + WPF + TUI), osx-x64 (engine + TUI) — plus the Linux test run. GitHub-only extras (macOS `.app` bundling, release ZIPs) stay in the GitHub workflow. Triggers on pushes/tags to `main` and PRs against `main`. |
 | `.github/workflows/build.yml` | GitHub (mirror) | 3-OS matrix build + draft releases on GitHub-hosted runners. Its jobs are guarded with `if: github.server_url == 'https://github.com'` so they skip instantly on Forgejo (which also discovers `.github/workflows/`). |
+
+The Forgejo runner is one modest Linux box, and the workflow's concurrency group keeps it on one CI job at a time. If a run goes red with OOM or compiler failures, re-run it solo before treating it as a code failure — a concurrent-run collision already happened once (2026-10-12).
 
 ## Development Phases
 

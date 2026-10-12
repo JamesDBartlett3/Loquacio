@@ -10,9 +10,9 @@
 #
 # All three RID legs build on the single Linux runner: .NET cross-compiles
 # win-x64 and osx-x64 from Linux, and the WPF controller compiles there too
-# via EnableWindowsTargeting=true (Directory.Build.props). Only what must RUN
-# on the target OS stays GitHub-only: the test run (Linux binaries) and the
-# macOS .app bundle (packaging/macos/build-app.sh refuses to run off Darwin).
+# via EnableWindowsTargeting=true (Directory.Build.props). The Linux test run
+# executes here too; only the macOS .app bundle (packaging/macos/build-app.sh
+# refuses to run off Darwin) and the release ZIPs/publishing stay GitHub-only.
 #
 # The GitHub mirror keeps its 3-OS workflow in .github/workflows/build.yml.
 # Forgejo also discovers .github/workflows/, so that file's jobs are guarded
@@ -27,9 +27,16 @@ on:
   pull_request:
     branches: [main]
 
+# One CI job at a time: the runner is a single Linux box and concurrent runs
+# have collided before (OOM/compiler failures). If this Forgejo version
+# ignores the concurrency key, the fallback is runner capacity 1 (a host
+# config change owned by James).
+concurrency: { group: loquacio-forgejo-ci, cancel-in-progress: false }
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout (token-clone, full history for git describe)
         run: |
@@ -50,6 +57,16 @@ jobs:
             fi
             git fetch origin "+refs/pull/$PRNUM/head"
             git checkout --force FETCH_HEAD
+          else
+            # Non-PR events: the clone checked out the default branch HEAD at
+            # clone time, which on tag pushes can differ from the event's
+            # commit (version hash must match the tag). Check out the event
+            # commit deterministically.
+            if [ -z "${GITHUB_SHA:-}" ]; then
+              echo "non-pull_request event without GITHUB_SHA; cannot check out the event commit" >&2
+              exit 1
+            fi
+            git checkout --force "$GITHUB_SHA"
           fi
           git log --oneline -3
           # Informational: the repo may have no tags yet on Forgejo (the
@@ -71,6 +88,8 @@ jobs:
           echo "$HOME/.dotnet" >> "$GITHUB_PATH"
           echo "DOTNET_ROOT=$HOME/.dotnet" >> "$GITHUB_ENV"
           echo "DOTNET_CLI_TELEMETRY_OPTOUT=1" >> "$GITHUB_ENV"
+          # Stop MSBuild node reuse from piling up across the 8 publish runs.
+          echo "DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=true" >> "$GITHUB_ENV"
 
       - name: Compute version
         run: |
